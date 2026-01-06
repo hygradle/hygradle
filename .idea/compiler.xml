@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="25">
+      <module name="as.remigelin.papalowda" target="21" />
+      <module name="as.remigelin.papalowda.main" target="21" />
+      <module name="as.remigelin.papalowda.papalowda" target="21" />
+      <module name="as.remigelin.papalowda.papalowda.main" target="21" />
+      <module name="as.remigelin.papalowda.papalowda.test" target="21" />
+      <module name="as.remigelin.papalowda.test" target="21" />
+      <module name="build-logic" target="24" />
+      <module name="build-logic.main" target="24" />
+      <module name="build-logic.test" target="24" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

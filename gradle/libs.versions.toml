@@ -1,0 +1,25 @@
+[versions]
+kotlin = "2.3.0"
+ktfmt = "0.61"
+junit = "6.0.2"
+ktor = "3.4.0"
+
+[libraries]
+gradle-testkit = { group = "org.gradle", name = "gradle-test-kit", version = "6.1.1" }
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.10.0" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.10.2" }
+vineflower = { group = "org.vineflower", name = "vineflower", version = "1.11.2" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+de-undercouch-download = { group = "de.undercouch.download", name = "de.undercouch.download.gradle.plugin", version = "5.7.0" }
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+plugin-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }
+spotless = { id = "com.diffplug.spotless", version = "8.1.0" }
+shadow = { id = "com.gradleup.shadow", version = "9.3.0" }
+dokka = { id = "org.jetbrains.dokka", version = "2.1.0" }
