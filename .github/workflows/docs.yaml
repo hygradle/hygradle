@@ -23,6 +23,7 @@ jobs:
               - 'docs/**'
 
   build-docs:
+    needs: changes
     if: ${{ needs.changes.outputs.docs == 'true' }}
     runs-on: ubuntu-latest
     steps:
