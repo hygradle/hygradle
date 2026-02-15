@@ -15,9 +15,9 @@ import org.jetbrains.java.decompiler.api.Decompiler
 import org.jetbrains.java.decompiler.main.decompiler.SingleFileSaver
 
 @CacheableTransform
-public abstract class Decompile @Inject constructor(private val project: Project) :
+abstract class Decompile @Inject constructor(private val project: Project) :
     TransformAction<TransformParameters.None> {
-  @get:Classpath @get:InputArtifact public abstract val inputArtifact: Provider<FileSystemLocation>
+  @get:Classpath @get:InputArtifact abstract val inputArtifact: Provider<FileSystemLocation>
 
   override fun transform(outputs: TransformOutputs) {
     val inputFile = inputArtifact.get().asFile
@@ -29,15 +29,15 @@ public abstract class Decompile @Inject constructor(private val project: Project
     decompiler.decompile()
   }
 
-  public companion object {
-    public val DECOMPILED_ATTRIBUTE: Attribute<Boolean> =
+  companion object {
+    val DECOMPILED_ATTRIBUTE: Attribute<Boolean> =
         Attribute.of("decompiled", Boolean::class.javaObjectType)
 
     internal fun register(project: Project) {
       with(project.dependencies) {
-        registerTransform(Decompile::class.java) { spec ->
-          spec.from.attribute(DECOMPILED_ATTRIBUTE, false)
-          spec.to.attribute(DECOMPILED_ATTRIBUTE, true)
+        registerTransform(Decompile::class.java) {
+          from.attribute(DECOMPILED_ATTRIBUTE, false)
+          to.attribute(DECOMPILED_ATTRIBUTE, true)
         }
       }
     }

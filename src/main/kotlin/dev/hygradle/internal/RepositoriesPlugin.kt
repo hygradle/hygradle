@@ -1,6 +1,5 @@
 package dev.hygradle.internal
 
-import java.net.URI
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -23,19 +22,14 @@ public class RepositoriesPlugin : Plugin<PluginAware> {
 }
 
 public fun RepositoryHandler.apply() {
-  val repositories =
-      HytalePatchline.entries.map { patchline ->
-        maven {
-          it.name = "hytale-${patchline.name.lowercase()}"
-          it.url = URI.create(patchline.repository)
-        }
-      }
-
-  removeAll(repositories)
-  addAll(0, repositories)
-}
-
-public enum class HytalePatchline(public val repository: String) {
-  RELEASE("https://maven.hytale.com/release"),
-  PRERELEASE("https://maven.hytale.com/pre-release"),
+  //  val repositories =
+  //      HytalePatchline.entries.map { patchline ->
+  //        maven {
+  //          it.name = "hytale-${patchline.name.lowercase()}"
+  //          it.url = URI.create(patchline.repository)
+  //        }
+  //      }
+  //
+  //  removeAll(repositories)
+  //  addAll(0, repositories)
 }

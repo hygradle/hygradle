@@ -1,28 +1,51 @@
 package dev.hygradle.tasks
 
-import dev.hygradle.internal.HytalePatchline
+import dev.hygradle.dsl.hytale.Patchline
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 
-public abstract class ExtractAssetBundle : Copy() {
-  @get:Input public abstract val patchline: Property<HytalePatchline>
-  @get:Input public abstract val hytaleVersion: Property<String>
-  @get:InputFile public abstract val gameBundle: RegularFileProperty
-  @get:OutputFile public abstract val assetBundle: RegularFileProperty
+@CacheableTask
+abstract class ExtractAssetBundle : Copy() {
+  @get:Input abstract val patchline: Property<Patchline>
+  @get:Input abstract val version: Property<String>
+
+  @get:InputDirectory abstract val cacheDirectory: DirectoryProperty
+  @get:InputFile abstract val gameBundle: RegularFileProperty
+  @get:OutputFile abstract val assetBundle: RegularFileProperty
 
   init {
-    assetBundle.convention(project.layout.buildDirectory.file("assets.zip"))
+    cacheDirectory.convention(
+        project.layout.projectDirectory.dir(".gradle").dir("caches").dir("hygradle").dir("assets")
+    )
+
+    assetBundle.set(
+        cacheDirectory.file(
+            patchline.zip(
+                version,
+            ) { patchline, version ->
+              "${patchline.toString().lowercase()}-${version}.zip"
+            }
+        )
+    )
+
+    from(
+        gameBundle
+            .map { project.zipTree(it) }
+            .map { it.matching { include("Assets.zip") }.singleFile }
+    )
+
+    into(cacheDirectory)
   }
 
   override fun copy() {
-    println("Extracting asset bundle...")
-
-    from(gameBundle)
-    into(project.layout.buildDirectory.dir("bundle"))
+    rename { assetBundle.get().asFile.name }
     super.copy()
   }
 }

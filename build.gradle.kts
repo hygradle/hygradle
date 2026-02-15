@@ -1,13 +1,15 @@
-@file:Suppress("UnstableApiUsage")
-
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
+group = "dev.hygradle"
+
+version = "0.0.1"
+
 plugins {
+  `kotlin-dsl`
   groovy
-  alias(libs.plugins.kotlin)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.plugin.publish)
   alias(libs.plugins.shadow)
@@ -15,41 +17,30 @@ plugins {
   alias(libs.plugins.dokka)
 }
 
-group = "dev.hygradle"
-
-version = "0.0.1"
+java { targetCompatibility = JavaVersion.VERSION_24 }
 
 kotlin {
-  explicitApi()
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
   jvmToolchain(25)
   compilerOptions {
     allWarningsAsErrors = true
     apiVersion = KotlinVersion.KOTLIN_2_2
     languageVersion = apiVersion
-    jvmTarget = JvmTarget.fromTarget("25")
+    jvmTarget = JvmTarget.fromTarget("24")
   }
 }
 
-val shade: Configuration by configurations.creating
+tasks.withType<ShadowJar> {
+  archiveClassifier = null as String?
+  minimizeJar = true
+}
 
-configurations.implementation.configure { extendsFrom(shade) }
-
-val shadowJar by
-    tasks.existing(ShadowJar::class) {
-      archiveClassifier = null as String?
-      configurations = listOf(shade)
-      minimizeJar = true
-    }
-
-spotless {
-  kotlin { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
-  kotlinGradle { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
+@Suppress("UnstableApiUsage")
+testing.suites {
+  val functionalTest by registering(JvmTestSuite::class) { useSpock(libs.versions.spock.get()) }
 }
 
 dependencies {
-  compileOnly(libs.kotlin.gradle.plugin)
-
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.vineflower)
@@ -58,23 +49,20 @@ dependencies {
   implementation(libs.ktor.client.content.negotiation)
   implementation(libs.ktor.serialization.kotlinx.json)
   implementation(libs.de.undercouch.download)
+
+  "functionalTestImplementation"(gradleTestKit())
+}
+
+spotless {
+  kotlin { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
+  kotlinGradle { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
 }
 
 gradlePlugin {
   vcsUrl = "https://github.com/remi-gelinas/hygradle"
   website = "https://hygradle.dev"
-
-  plugins.create("hygradle") {
+  plugins.register("pluginPortal") {
     id = "dev.hygradle"
-    displayName = "Hygradle"
-    description = "Gradle plugin for Hytale plugin development."
-    tags = listOf("hytale")
-    implementationClass = "dev.hygradle.internal.HygradlePlugin"
+    implementationClass = "dev.hygradle.HygradlePlugin"
   }
-}
-
-testing.suites {
-  register<JvmTestSuite>("functionalTest") { dependencies.implementation(libs.gradle.testkit) }
-
-  withType<JvmTestSuite>().configureEach { useJUnitJupiter(libs.versions.junit.get()) }
 }
