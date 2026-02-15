@@ -11,3 +11,5 @@ dependencyResolutionManagement {
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 enableFeaturePreview("GROOVY_COMPILATION_AVOIDANCE")
+
+rootProject.name = "hygradle"

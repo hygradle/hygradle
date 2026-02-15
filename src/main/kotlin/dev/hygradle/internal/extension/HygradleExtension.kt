@@ -16,7 +16,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 
 abstract class HygradleExtension @Inject constructor(objects: ObjectFactory) : Hygradle {
-  override val hytale = objects.newInstance<VersionImpl>()
+  override val hytale: Version = objects.newInstance<VersionImpl>()
 
   override fun hytale(configure: Action<in Version>) = configure.execute(hytale)
 
