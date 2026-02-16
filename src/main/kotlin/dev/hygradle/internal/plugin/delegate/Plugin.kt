@@ -2,6 +2,7 @@ package dev.hygradle.internal.plugin.delegate
 
 import dev.hygradle.dsl.plugin.DependencyHandler
 import dev.hygradle.dsl.plugin.Plugin
+import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.plugin.DependencyHandlerImpl
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectProvider
@@ -12,7 +13,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.kotlin.dsl.newInstance
 
 @Suppress("UnstableApiUsage")
-class Plugin(private val name: String, private val project: Project) : Plugin {
+abstract class Plugin(private val name: String, private val project: Project) : Plugin {
   override fun getName(): String = name
 
   override val runtimeOnlyConfiguration: NamedDomainObjectProvider<out Configuration> =
@@ -39,6 +40,14 @@ class Plugin(private val name: String, private val project: Project) : Plugin {
     compileOnlyConfiguration.configure {
       extendsFrom(project.configurations.named(sourceSet.compileOnlyConfigurationName))
     }
+
+    // Add Hytale as a compile-only dep to the source set
+    project.dependencies.addProvider(
+        sourceSet.compileOnlyConfigurationName,
+        project.hygradle().hytale.version.map {
+          project.dependencyFactory.create("com.hypixel.hytale", "Server", it)
+        },
+    )
   }
 
   override fun sourceSet(sourceSet: Provider<SourceSet>) = sourceSet(sourceSet.get())

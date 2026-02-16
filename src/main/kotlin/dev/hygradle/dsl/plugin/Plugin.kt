@@ -4,13 +4,19 @@ import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceSet
 
 /** The base for all plugin types. */
 interface Plugin : Named {
+  @get:Input val sourceSetCompileOnlyConfigurationName: Property<String>
+
+  @get:Input val sourceSetRuntimeOnlyConfigurationName: Property<String>
+
   /** The compile-only configuration for the plugin. */
   @get:Internal val compileOnlyConfiguration: NamedDomainObjectProvider<out Configuration>
 

@@ -7,10 +7,10 @@ import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
-public abstract class GeneratePluginManifest : DefaultTask() {
-  @get:Nested public abstract val spec: Manifest
+abstract class GeneratePluginManifest : DefaultTask() {
+  @get:Nested abstract val spec: Manifest
 
-  @get:OutputFile public abstract val manifest: RegularFileProperty
+  @get:OutputFile abstract val manifest: RegularFileProperty
 
   init {
 

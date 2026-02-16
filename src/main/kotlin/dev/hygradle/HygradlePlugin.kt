@@ -2,13 +2,12 @@ package dev.hygradle
 
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.HygradleExtension
-import dev.hygradle.tasks.GeneratePluginManifest
+import java.net.URI
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 
 @Suppress("Unused")
@@ -23,10 +22,19 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
     val ext = project.extensions.create<HygradleExtension>("hygradle")
 
     ext.plugins.withType<LatePlugin>().all {
-      val generateManifest =
-          project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
-            group = "hygradle/plugins/${name}"
-          }
+      //      val generateManifest =
+      //          project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
+      //            group = "hygradle/plugins/${name}"
+      //          }
     }
+
+    project.repositories.add(
+        ext.hytale.patchline.map {
+          project.repositories.maven {
+            name = "hytale-${it.name.lowercase()}"
+            url = URI.create(it.repository)
+          }
+        }.get()
+    )
   }
 }
