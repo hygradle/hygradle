@@ -35,7 +35,7 @@ tasks.withType<ShadowJar> {
 
 @Suppress("UnstableApiUsage")
 testing.suites {
-  val functionalTest by registering(JvmTestSuite::class) { useSpock(libs.versions.spock.get()) }
+  val functionalTest by registering(JvmTestSuite::class) { useSpock() }
 }
 
 dependencies {

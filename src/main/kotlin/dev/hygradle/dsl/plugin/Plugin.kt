@@ -9,6 +9,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceSet
 
+/** The base for all plugin types. */
 interface Plugin : Named {
   /** The compile-only configuration for the plugin. */
   @get:Internal val compileOnlyConfiguration: NamedDomainObjectProvider<out Configuration>
@@ -22,8 +23,10 @@ interface Plugin : Named {
   /** The runtime-only classpath for the plugin. */
   @get:Internal val runtimeClasspathConfiguration: NamedDomainObjectProvider<out Configuration>
 
+  /** The custom [DependencyHandler] for this plugin. */
   @get:Nested val dependencies: DependencyHandler
 
+  /** Configure the [DependencyHandler] for this plugin. */
   fun dependencies(configure: Action<in DependencyHandler>)
 
   /** Assign the primary source set to use for the plugin. */

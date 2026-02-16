@@ -2,14 +2,8 @@
 kotlin = "2.3.0"
 ktfmt = "0.61"
 ktor = "3.4.0"
-spock = "2.4-groovy-5.0"
 
 [libraries]
-groovy = { group = "org.apache.groovy", name = "groovy-all", version = "5.0.4" }
-gradle-testkit = { group = "org.gradle", name = "gradle-test-kit", version = "6.1.1" }
-gradle-api = { group = "org.gradle.experimental", name = "gradle-public-api" }
-jspecify = { group = "org.jspecify", name = "jspecify", version = "1.0.0" }
-kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.10.0" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.10.2" }
 vineflower = { group = "org.vineflower", name = "vineflower", version = "1.11.2" }
@@ -20,7 +14,6 @@ ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serializatio
 de-undercouch-download = { group = "de.undercouch.download", name = "de.undercouch.download.gradle.plugin", version = "5.7.0" }
 
 [plugins]
-kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }
 spotless = { id = "com.diffplug.spotless", version = "8.1.0" }
