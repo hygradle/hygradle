@@ -8,7 +8,7 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.plugins.PluginAware
 
 @Suppress("UnstableApiUsage")
-public class RepositoriesPlugin : Plugin<PluginAware> {
+class RepositoriesPlugin : Plugin<PluginAware> {
   override fun apply(target: PluginAware) {
     when (target) {
       is Project -> target.repositories.apply()
@@ -21,7 +21,7 @@ public class RepositoriesPlugin : Plugin<PluginAware> {
   }
 }
 
-public fun RepositoryHandler.apply() {
+fun RepositoryHandler.apply() {
   //  val repositories =
   //      HytalePatchline.entries.map { patchline ->
   //        maven {

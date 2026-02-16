@@ -17,16 +17,14 @@ plugins {
   alias(libs.plugins.dokka)
 }
 
-java { targetCompatibility = JavaVersion.VERSION_24 }
-
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
   jvmToolchain(25)
   compilerOptions {
     allWarningsAsErrors = true
-    apiVersion = KotlinVersion.KOTLIN_2_2
+    apiVersion = KotlinVersion.KOTLIN_2_3
     languageVersion = apiVersion
-    jvmTarget = JvmTarget.fromTarget("24")
+    jvmTarget = JvmTarget.fromTarget("25")
   }
 }
 
@@ -61,8 +59,5 @@ spotless {
 gradlePlugin {
   vcsUrl = "https://github.com/remi-gelinas/hygradle"
   website = "https://hygradle.dev"
-  plugins.register("pluginPortal") {
-    id = "dev.hygradle"
-    implementationClass = "dev.hygradle.HygradlePlugin"
-  }
+  plugins.register("dev.hygradle") { implementationClass = "dev.hygradle.HygradlePlugin" }
 }

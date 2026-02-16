@@ -6,8 +6,8 @@ import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.dsl.run.Run
 import dev.hygradle.internal.hytale.VersionImpl
+import dev.hygradle.internal.plugin.LatePluginImpl
 import dev.hygradle.internal.run.RunImpl
-import dev.hygradle.plugin.LatePluginImpl
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer

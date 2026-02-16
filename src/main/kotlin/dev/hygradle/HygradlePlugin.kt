@@ -20,25 +20,6 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
     ext.plugins.withType(LatePlugin::class.java).all {
       val generateManifest =
           project.tasks.register("${name}GenerateManifest") { group = "hygradle/plugins/${name}" }
-
-      val runtimeOnly = project.configurations.dependencyScope("${name}RuntimeOnly")
-      val compileOnly = project.configurations.dependencyScope("${name}CompileOnly")
-      val implementation = project.configurations.dependencyScope("${name}Implementation")
-
-      val runtimeClasspath =
-          project.configurations.resolvable("${name}RuntimeClasspath") {
-            extendsFrom(implementation.get(), runtimeOnly.get())
-          }
-
-      val compileClasspath =
-          project.configurations.resolvable("${name}CompileClasspath") {
-            extendsFrom(implementation.get(), compileOnly.get())
-          }
-
-      //      runtimeOnlyConfiguration.set(runtimeOnly)
-      //      compileOnlyConfiguration.set(compileOnly)
-      //      runtimeClasspathConfiguration.set(runtimeClasspath)
-      //      compileClasspathConfiguration.set(compileClasspath)
     }
   }
 }
