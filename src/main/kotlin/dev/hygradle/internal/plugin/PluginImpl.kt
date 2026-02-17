@@ -15,7 +15,8 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class PluginImpl @Inject constructor(private val name: String, project: Project) : Plugin {
+abstract class PluginImpl @Inject internal constructor(private val name: String, project: Project) :
+    Plugin {
   override fun getName(): String = name
 
   override val compileOnlyConfiguration: NamedDomainObjectProvider<out Configuration> =

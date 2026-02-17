@@ -13,7 +13,6 @@ abstract class GeneratePluginManifest : DefaultTask() {
   @get:OutputFile abstract val manifest: RegularFileProperty
 
   init {
-
     val pluginBuildDir =
         spec.name.flatMap { name -> project.layout.buildDirectory.dir("hygradle/plugins/$name") }
 
@@ -21,7 +20,7 @@ abstract class GeneratePluginManifest : DefaultTask() {
   }
 
   @TaskAction
-  public fun generate() {
+  fun generate() {
     manifest
         .get()
         .asFile

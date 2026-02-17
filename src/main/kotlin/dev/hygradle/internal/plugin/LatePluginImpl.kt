@@ -11,7 +11,7 @@ import org.gradle.kotlin.dsl.newInstance
 
 abstract class LatePluginImpl
 @Inject
-constructor(private val name: String, objects: ObjectFactory) :
+internal constructor(private val name: String, objects: ObjectFactory) :
     Plugin by objects.newInstance<PluginImpl>(name), LatePlugin {
   override val manifest: Manifest = objects.newInstance<ManifestImpl>(name)
 

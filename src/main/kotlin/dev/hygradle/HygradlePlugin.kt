@@ -1,12 +1,15 @@
 package dev.hygradle
 
+import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.HygradleExtension
+import dev.hygradle.tasks.GeneratePluginManifest
 import java.net.URI
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 
 @Suppress("Unused")
@@ -25,10 +28,6 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
           sourceSetCompileOnlyConfigurationName.get(),
           project.dependencies.create("com.hypixel.hytale:Server:${ext.hytale.version.get()}"),
       )
-      //      val generateManifest =
-      //          project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
-      //            group = "hygradle/plugins/${name}"
-      //          }
     }
 
     project.repositories.add(
@@ -41,5 +40,13 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
             }
             .get()
     )
+
+    ext.plugins.withType<LatePlugin>().all {
+      val generateManifest =
+          project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
+            group = "hygradle/plugins/${name}"
+            spec.set(this@all.manifest)
+          }
+    }
   }
 }
