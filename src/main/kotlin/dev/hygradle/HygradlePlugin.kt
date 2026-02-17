@@ -1,6 +1,5 @@
 package dev.hygradle
 
-import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.HygradleExtension
 import java.net.URI
 import org.gradle.api.GradleException
@@ -21,7 +20,11 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
   private fun apply(project: Project) {
     val ext = project.extensions.create<HygradleExtension>("hygradle")
 
-    ext.plugins.withType<LatePlugin>().all {
+    ext.plugins.withType<dev.hygradle.dsl.plugin.Plugin>().all {
+      project.dependencies.add(
+          sourceSetCompileOnlyConfigurationName.get(),
+          project.dependencies.create("com.hypixel.hytale:Server:${ext.hytale.version.get()}"),
+      )
       //      val generateManifest =
       //          project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
       //            group = "hygradle/plugins/${name}"
@@ -29,12 +32,14 @@ abstract class HygradlePlugin : Plugin<PluginAware> {
     }
 
     project.repositories.add(
-        ext.hytale.patchline.map {
-          project.repositories.maven {
-            name = "hytale-${it.name.lowercase()}"
-            url = URI.create(it.repository)
-          }
-        }.get()
+        ext.hytale.patchline
+            .map {
+              project.repositories.maven {
+                name = "hytale-${it.name.lowercase()}"
+                url = URI.create(it.repository)
+              }
+            }
+            .get()
     )
   }
 }

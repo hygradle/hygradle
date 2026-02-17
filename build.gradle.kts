@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage", "Unused")
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -33,7 +35,6 @@ tasks.withType<ShadowJar> {
   minimizeJar = true
 }
 
-@Suppress("UnstableApiUsage")
 testing.suites {
   val functionalTest by registering(JvmTestSuite::class) { useSpock() }
 }
