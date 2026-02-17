@@ -1,9 +1,11 @@
 <div align="center">
-    <img src=".github/assets/logo.svg" width="250px" height="250px">
+    <picture>
+        <source media="(prefers-color-scheme: light)" srcset=".github/assets/logos/mark-text-light.svg">
+        <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logos/mark-text-dark.svg">
+        <img src=".github/assets/logos/mark-text-light.svg" height="170px"/>
+    </picture>
 </div>
 
 <div align="center">
     <img src="https://img.shields.io/badge/Gradle-9.4.0--rc--1-blue?logo=Gradle" />
 </div>
-
-## hygradle
