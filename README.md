@@ -1,8 +1,7 @@
 <div align="center">
     <picture>
-        <source media="(prefers-color-scheme: light)" srcset=".github/assets/logos/mark-text-light.svg">
         <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logos/mark-text-dark.svg">
-        <img src=".github/assets/logos/mark-text-light.svg" height="170px"/>
+        <img src=".github/assets/logos/mark-text-light.svg" height="180px"/>
     </picture>
 </div>
 
