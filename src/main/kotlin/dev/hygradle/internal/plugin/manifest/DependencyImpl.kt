@@ -1,4 +1,4 @@
-package dev.hygradle.plugin.manifest
+package dev.hygradle.internal.plugin.manifest
 
 import dev.hygradle.dsl.plugin.manifest.Dependency
 

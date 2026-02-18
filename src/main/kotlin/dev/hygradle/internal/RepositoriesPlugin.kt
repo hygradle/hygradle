@@ -1,35 +1,34 @@
 package dev.hygradle.internal
 
-import org.gradle.api.GradleException
+import dev.hygradle.internal.extension.hygradle
+import java.net.URI
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.dsl.RepositoryHandler
-import org.gradle.api.initialization.Settings
-import org.gradle.api.plugins.PluginAware
 
-@Suppress("UnstableApiUsage")
-class RepositoriesPlugin : Plugin<PluginAware> {
-  override fun apply(target: PluginAware) {
-    when (target) {
-      is Project -> target.repositories.apply()
-      is Settings -> {
-        target.dependencyResolutionManagement.repositories.apply()
-        target.gradle.plugins.apply(this::class.java)
-      }
-      else -> throw GradleException("")
-    }
+class RepositoriesPlugin : Plugin<Project> {
+  override fun apply(project: Project) {
+    project.repositories.add(
+        project
+            .hygradle()
+            .hytale
+            .patchline
+            .map {
+              project.repositories.maven {
+                name = "hytale-${it.name.lowercase()}"
+                url = URI.create(it.repository)
+              }
+            }
+            .get()
+    )
+
+    // TODO: Figure out why lazy adding causes a concurrent modification issue
+    //    project.repositories.addLater(
+    //        project.hygradle().hytale.patchline.map {
+    //          project.repositories.maven {
+    //            name = "hytale.${it.name.lowercase()}"
+    //            url = URI.create(it.repository)
+    //          }
+    //        }
+    //    )
   }
-}
-
-fun RepositoryHandler.apply() {
-  //  val repositories =
-  //      HytalePatchline.entries.map { patchline ->
-  //        maven {
-  //          it.name = "hytale-${patchline.name.lowercase()}"
-  //          it.url = URI.create(patchline.repository)
-  //        }
-  //      }
-  //
-  //  removeAll(repositories)
-  //  addAll(0, repositories)
 }

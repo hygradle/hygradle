@@ -36,7 +36,11 @@ tasks.withType<ShadowJar> {
 }
 
 testing.suites {
-  val functionalTest by registering(JvmTestSuite::class) { useSpock() }
+  val functionalTest by
+      registering(JvmTestSuite::class) {
+        useSpock()
+        dependencies { implementation(gradleTestKit()) }
+      }
 }
 
 dependencies {
@@ -48,8 +52,7 @@ dependencies {
   implementation(libs.ktor.client.content.negotiation)
   implementation(libs.ktor.serialization.kotlinx.json)
   implementation(libs.de.undercouch.download)
-
-  "functionalTestImplementation"(gradleTestKit())
+  implementation(libs.foojay.resolver.convention)
 }
 
 spotless {
@@ -60,5 +63,5 @@ spotless {
 gradlePlugin {
   vcsUrl = "https://github.com/remi-gelinas/hygradle"
   website = "https://hygradle.dev"
-  plugins.register("dev.hygradle") { implementationClass = "dev.hygradle.HygradlePlugin" }
+  plugins.register("dev.hygradle") { implementationClass = "dev.hygradle.internal.HygradlePlugin" }
 }

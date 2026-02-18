@@ -1,8 +1,9 @@
-package dev.hygradle.plugin.manifest
+package dev.hygradle.internal.plugin.manifest
 
 import dev.hygradle.dsl.plugin.manifest.Author
 import dev.hygradle.dsl.plugin.manifest.Dependency
 import dev.hygradle.dsl.plugin.manifest.Manifest
+import dev.hygradle.internal.extension.hygradle
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -11,11 +12,13 @@ import org.gradle.kotlin.dsl.newInstance
 
 abstract class ManifestImpl
 @Inject
-constructor(pluginName: String, private val objects: ObjectFactory, project: Project) : Manifest {
+internal constructor(pluginName: String, private val objects: ObjectFactory, project: Project) :
+    Manifest {
   init {
     name.convention(pluginName)
     group.convention(project.group.toString())
     version.convention(project.version.toString())
+    serverVersion.convention(project.hygradle().hytale.version)
   }
 
   override fun author(configure: Action<in Author>) {
@@ -26,7 +29,7 @@ constructor(pluginName: String, private val objects: ObjectFactory, project: Pro
   }
 
   override fun dependency(configure: Action<in Dependency>) {
-    objects.newInstance<Dependency>().also {
+    objects.newInstance<DependencyImpl>().also {
       configure.execute(it)
       dependencies.add(it)
     }

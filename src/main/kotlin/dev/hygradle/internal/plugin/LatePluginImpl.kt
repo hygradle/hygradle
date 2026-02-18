@@ -3,7 +3,7 @@ package dev.hygradle.internal.plugin
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.dsl.plugin.manifest.Manifest
-import dev.hygradle.plugin.manifest.ManifestImpl
+import dev.hygradle.internal.plugin.manifest.ManifestImpl
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory

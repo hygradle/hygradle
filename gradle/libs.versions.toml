@@ -12,6 +12,7 @@ ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 de-undercouch-download = { group = "de.undercouch.download", name = "de.undercouch.download.gradle.plugin", version = "5.7.0" }
+foojay-resolver-convention = { group = "org.gradle.toolchains.foojay-resolver-convention", name = "org.gradle.toolchains.foojay-resolver-convention.gradle.plugin", version = "1.0.0" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

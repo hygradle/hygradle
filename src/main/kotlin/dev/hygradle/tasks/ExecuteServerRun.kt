@@ -7,16 +7,16 @@ import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 
-public abstract class ExecuteServerRun : JavaExec() {
-  @get:Classpath public abstract val classpathProvider: ConfigurableFileCollection
-  @get:Input public abstract val gameDirectory: Property<Path>
-
-  //  @get:Input public abstract val plugins: ListProperty<Plugin>
+@DisableCachingByDefault
+abstract class ExecuteServerRun : JavaExec() {
+  @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
+  @get:Input abstract val gameDirectory: Property<Path>
 
   init {
     mainClass.convention("com.hypixel.hytale.Main")
-    gameDirectory.convention(project.layout.projectDirectory.dir("run").dir(name).asFile.toPath())
+    gameDirectory.convention(project.layout.projectDirectory.dir(".run").dir(name).asFile.toPath())
   }
 
   @TaskAction
@@ -24,10 +24,9 @@ public abstract class ExecuteServerRun : JavaExec() {
     gameDirectory.get().toFile().mkdirs()
 
     setWorkingDir(gameDirectory)
-    setArgs(listOf("--disable-sentry", "--auth-mode=insecure"))
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    args = listOf("--disable-sentry", "--auth-mode=insecure")
     classpath(classpathProvider)
     super.exec()
   }
-
-  private fun prepareResourceDirectories() {}
 }
