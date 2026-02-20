@@ -30,10 +30,7 @@ kotlin {
   }
 }
 
-tasks.withType<ShadowJar> {
-  archiveClassifier = null as String?
-  minimizeJar = true
-}
+tasks.withType<ShadowJar> { archiveClassifier = null as String? }
 
 testing.suites {
   val functionalTest by

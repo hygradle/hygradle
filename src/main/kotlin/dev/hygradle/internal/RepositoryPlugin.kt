@@ -5,7 +5,7 @@ import java.net.URI
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class RepositoriesPlugin : Plugin<Project> {
+class RepositoryPlugin : Plugin<Project> {
   override fun apply(project: Project) {
     project.repositories.add(
         project
