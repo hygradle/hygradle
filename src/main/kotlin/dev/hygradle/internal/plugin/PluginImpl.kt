@@ -15,8 +15,9 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class PluginImpl @Inject internal constructor(private val name: String, project: Project) :
-    Plugin {
+abstract class PluginImpl
+@Inject
+internal constructor(private val name: String, private val project: Project) : Plugin {
   override fun getName(): String = name
 
   override val compileOnlyConfiguration: NamedDomainObjectProvider<out Configuration> =
@@ -45,12 +46,9 @@ abstract class PluginImpl @Inject internal constructor(private val name: String,
   override fun dependencies(configure: Action<in DependencyHandler>) =
       configure.execute(dependencies)
 
-  override fun sourceSet(sourceSet: Provider<SourceSet>) = sourceSet(sourceSet.get())
+  override fun sourceSet(sourceSet: Provider<SourceSet>) = this.sourceSet.set(sourceSet)
 
-  override fun sourceSet(sourceSet: SourceSet) {
-    sourceSetCompileOnlyConfigurationName.set(sourceSet.compileOnlyConfigurationName)
-    sourceSetRuntimeOnlyConfigurationName.set(sourceSet.runtimeOnlyConfigurationName)
-  }
+  override fun sourceSet(sourceSet: SourceSet) = sourceSet(project.provider { sourceSet })
 
   init {
     sourceSet(
@@ -59,7 +57,7 @@ abstract class PluginImpl @Inject internal constructor(private val name: String,
 
     compileOnlyConfiguration.configure {
       extendsFrom(
-          sourceSetCompileOnlyConfigurationName.flatMap { project.configurations.named(it) }
+          sourceSet.flatMap { project.configurations.named(it.compileOnlyConfigurationName) }
       )
     }
 
@@ -67,7 +65,7 @@ abstract class PluginImpl @Inject internal constructor(private val name: String,
 
     runtimeOnlyConfiguration.configure {
       extendsFrom(
-          sourceSetRuntimeOnlyConfigurationName.flatMap { project.configurations.named(it) }
+          sourceSet.flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
       )
     }
 

@@ -4,7 +4,7 @@ import java.nio.file.Path
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
@@ -12,7 +12,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault
 abstract class ExecuteServerRun : JavaExec() {
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
-  @get:Input abstract val gameDirectory: Property<Path>
+  @get:Internal abstract val gameDirectory: Property<Path>
 
   init {
     mainClass.convention("com.hypixel.hytale.Main")
