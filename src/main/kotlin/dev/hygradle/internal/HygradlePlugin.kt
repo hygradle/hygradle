@@ -30,25 +30,16 @@ class HygradlePlugin : Plugin<PluginAware> {
       apply(RepositoriesPlugin::class.java)
     }
 
-    val hytale = project.configurations.dependencyScope("hytale")
-    project.dependencies.add(
-        "hytale",
-        ext.hytale.version.map { project.dependencies.create("com.hypixel.hytale:Server:${it}") },
-    )
-
-    val hytaleClasspath = project.configurations.resolvable("hytaleClasspath")
-    hytaleClasspath.configure { extendsFrom(hytale) }
-
     ext.plugins.withType<dev.hygradle.dsl.plugin.Plugin>().all {
       project.configurations.named(sourceSetCompileOnlyConfigurationName.get()).configure {
-        extendsFrom(hytale)
+        extendsFrom(ext.hytale.hytaleOnly)
       }
     }
 
     ext.plugins.withType<LatePlugin>().all {
       val generateManifest =
           project.tasks.register<GeneratePluginManifest>("${name}GenerateManifest") {
-            group = "hygradle/plugins/$name"
+            group = "hygradle/plugins/${this@all.name}"
             spec.set(this@all.manifest)
           }
     }
@@ -56,9 +47,9 @@ class HygradlePlugin : Plugin<PluginAware> {
     ext.runs.withType<Run>().all {
       val executeRun =
           project.tasks.register<ExecuteServerRun>("${name}Run") {
-            group = "hygradle/runs/$name"
+            group = "hygradle/runs/${this@all.name}"
             ext.plugins.all {
-              classpathProvider.from(this.runtimeClasspathConfiguration, hytaleClasspath)
+              classpathProvider.from(this.runtimeClasspathConfiguration, ext.hytale.hytaleClasspath)
             }
           }
     }
