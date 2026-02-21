@@ -1,31 +1,41 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
+import tailwindcss from "@tailwindcss/vite";
+import mdx from "@astrojs/mdx";
+import {
+  rehypeCode,
+  remarkCodeTab,
+  remarkHeading,
+  remarkNpm,
+  remarkStructure,
+} from "fumadocs-core/mdx-plugins";
+
+import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-    site: "https://docs.hygradle.dev",
-    base: "/",
-	integrations: [
-		starlight({
-			title: 'Hygradle',
-            logo: {
-              src: './src/assets/hygradle.svg',
-              replacesTitle: true,
-            },
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/remi-gelinas/hygradle' }],
-			sidebar: [
-				{
-					label: 'Guides',
-					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
-					],
-				},
-				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
-				},
-			],
-		}),
-	],
+  output: "static",
+
+  integrations: [
+    react(),
+    mdx({
+      extendMarkdownConfig: false,
+      syntaxHighlight: false,
+      remarkPlugins: [
+        remarkHeading,
+        remarkCodeTab,
+        remarkNpm,
+        [remarkStructure, { exportAs: "structuredData" }],
+      ],
+      rehypePlugins: [rehypeCode],
+    }),
+  ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  adapter: cloudflare({
+    imageService: "cloudflare",
+  }),
 });

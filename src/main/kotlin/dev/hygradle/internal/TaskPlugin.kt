@@ -2,6 +2,7 @@ package dev.hygradle.internal
 
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.hygradle
+import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.tasks.GeneratePluginManifest
 import dev.hygradle.tasks.PreparePluginAssets
 import java.util.Locale.getDefault
@@ -18,34 +19,26 @@ class TaskPlugin : GradlePlugin<Project> {
 
       if (plugin is LatePlugin) {
         val generateManifest =
-            project.tasks.register<GeneratePluginManifest>(
-                "generate${
-          name.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(
-                getDefault()
-            ) else it.toString()
-          }
-        }PluginManifest"
-            ) {
-              group = "hygradle/plugins/${plugin.name}"
-              spec.set(plugin.manifest)
-            }
+            project.tasks
+                .register<GeneratePluginManifest>("generate${name.capitalize()}PluginManifest") {
+                  group = "hygradle/plugins/${plugin.name}"
+                  spec.set(plugin.manifest)
+                }
+                .also { plugin.generateManifest.set(generateManifest) }
 
         val preparePluginAssets =
-            project.tasks.register<PreparePluginAssets>(
-                "prepare${
-                  name.replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(
-                        getDefault()
-                    ) else it.toString()
-                  }
-                }PluginAssets"
-            ) {
-              group = "hygradle/plugins/${plugin.name}"
-              pluginName.set(plugin.name)
-              pluginManifest.set(generateManifest.flatMap { it.manifest })
-              pluginResources.from(plugin.sourceSet.map { it.resources })
-            }
+            project.tasks
+                .register<PreparePluginAssets>("prepare${name.capitalize()}PluginAssets") {
+                  group = "hygradle/plugins/${plugin.name}"
+                  pluginName.set(plugin.name)
+                  pluginManifest.set(generateManifest.flatMap { it.manifest })
+                  pluginResources.from(
+                      plugin.sourceSetName
+                          .flatMap { project.sourceSets().named(it) }
+                          .map { it.resources }
+                  )
+                }
+                .also { plugin.prepareAssets.set(it) }
       }
     }
 
@@ -53,4 +46,8 @@ class TaskPlugin : GradlePlugin<Project> {
 
     runs.all {}
   }
+}
+
+internal fun String.capitalize(): String = replaceFirstChar {
+  if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString()
 }

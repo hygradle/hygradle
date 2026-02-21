@@ -1,8 +1,5 @@
 <div align="center">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logos/mark-text-dark.svg">
-        <img src=".github/assets/logos/mark-text-light.svg" height="160px"/>
-    </picture>
+    <img src=".github/assets/logos/mark.svg" height="160px"/>
 </div>
 
 <div align="center">
@@ -10,3 +7,5 @@
     <img src="https://img.shields.io/badge/Kotlin-2.3-blue?logo=Kotlin" />
     <img src="https://img.shields.io/badge/License-MIT-blue" />
 </div>
+
+## hygradle

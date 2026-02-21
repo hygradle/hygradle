@@ -1,0 +1,7 @@
+<component name="CopyrightManager">
+  <settings default="Remi">
+    <module2copyright>
+      <element module="Kotlin" copyright="Remi" />
+    </module2copyright>
+  </settings>
+</component>

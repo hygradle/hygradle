@@ -46,18 +46,19 @@ internal constructor(private val name: String, private val project: Project) : P
   override fun dependencies(configure: Action<in DependencyHandler>) =
       configure.execute(dependencies)
 
-  override fun sourceSet(sourceSet: Provider<SourceSet>) = this.sourceSet.set(sourceSet)
+  override fun sourceSet(sourceSet: Provider<SourceSet>) =
+      this.sourceSetName.set(sourceSet.map { it.name })
 
   override fun sourceSet(sourceSet: SourceSet) = sourceSet(project.provider { sourceSet })
 
   init {
-    sourceSet(
-        project.extensions.findByType<SourceSetContainer>()!!.named(SourceSet.MAIN_SOURCE_SET_NAME)
-    )
+    sourceSet(project.sourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME))
 
     compileOnlyConfiguration.configure {
       extendsFrom(
-          sourceSet.flatMap { project.configurations.named(it.compileOnlyConfigurationName) }
+          sourceSetName
+              .flatMap { project.sourceSets().named(it) }
+              .flatMap { project.configurations.named(it.compileOnlyConfigurationName) }
       )
     }
 
@@ -65,10 +66,14 @@ internal constructor(private val name: String, private val project: Project) : P
 
     runtimeOnlyConfiguration.configure {
       extendsFrom(
-          sourceSet.flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
+          sourceSetName
+              .flatMap { project.sourceSets().named(it) }
+              .flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
       )
     }
 
     runtimeClasspathConfiguration.configure { extendsFrom(runtimeOnlyConfiguration) }
   }
 }
+
+internal fun Project.sourceSets() = project.extensions.findByType<SourceSetContainer>()!!

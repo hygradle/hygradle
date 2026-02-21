@@ -4,28 +4,27 @@ import dev.hygradle.dsl.plugin.manifest.Manifest
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
+@CacheableTask
 abstract class GeneratePluginManifest : DefaultTask() {
   @get:Nested abstract val spec: Property<Manifest>
 
-  @get:OutputFile
-  @get:PathSensitive(PathSensitivity.RELATIVE)
-  abstract val manifest: RegularFileProperty
+  @get:OutputFile abstract val manifest: RegularFileProperty
 
   init {
-    val pluginBuildDir =
-        spec.flatMap {
-          it.name.flatMap { name ->
-            project.layout.buildDirectory.dir("hygradle/plugins/$name/manifest")
-          }
-        }
-
-    manifest.convention(pluginBuildDir.map { dir -> dir.file("manifest.json") })
+    manifest.convention(
+        spec
+            .flatMap {
+              it.name.flatMap { name ->
+                project.layout.buildDirectory.dir("hygradle/plugins/$name/manifest")
+              }
+            }
+            .map { dir -> dir.file("manifest.json") }
+    )
   }
 
   @TaskAction
