@@ -1,5 +1,5 @@
 <div align="center">
-    <img src=".github/assets/logos/mark.svg" height="160px"/>
+    <img src="assets/logo.svg" height="160px"/>
 </div>
 
 <div align="center">
@@ -7,5 +7,3 @@
     <img src="https://img.shields.io/badge/Kotlin-2.3-blue?logo=Kotlin" />
     <img src="https://img.shields.io/badge/License-MIT-blue" />
 </div>
-
-## hygradle
