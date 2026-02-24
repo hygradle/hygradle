@@ -6,6 +6,7 @@ import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.tasks.ExecuteServerRun
 import dev.hygradle.tasks.GeneratePluginManifest
 import dev.hygradle.tasks.PreparePluginAssets
+import dev.hygradle.tasks.PrepareRunDirectory
 import java.util.Locale.getDefault
 import org.gradle.api.Plugin as GradlePlugin
 import org.gradle.api.Project
@@ -48,10 +49,17 @@ class TaskPlugin : GradlePlugin<Project> {
     runs.all {
       val run = this
 
+      val prepareRunDirectory =
+          project.tasks.register<PrepareRunDirectory>("prepare${name.capitalize()}RunDirectory") {
+            group = "hygradle/runs/${run.name}"
+            runName.set(run.name)
+          }
+
       val startServer =
           project.tasks.register<ExecuteServerRun>("start${name.capitalize()}Server") {
             group = "hygradle/runs/${run.name}"
 
+            runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
             classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
 
             plugins
@@ -60,16 +68,13 @@ class TaskPlugin : GradlePlugin<Project> {
                   classpathProvider.from(
                       it.sourceSetName
                           .flatMap { name -> project.sourceSets().named(name) }
-                          .map { sourceSet -> sourceSet.output }
+                          .map { sourceSet -> sourceSet.output.classesDirs }
                   )
 
                   classpathProvider.from(it.runtimeClasspathConfiguration)
 
                   if (it is LatePlugin)
-                      modDirectories.put(
-                          it.name,
-                          it.prepareAssets.flatMap { t -> t.assetDirectory },
-                      )
+                      classpathProvider.from(it.prepareAssets.flatMap { t -> t.assetDirectory })
                 }
           }
     }

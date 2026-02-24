@@ -37,8 +37,9 @@ abstract class GeneratePluginManifest : DefaultTask() {
             {
               "Name": "${spec.get().name.get()}",
               "Group": "test",
-              "MainClass": "${spec.get().mainClass.get()}",
-              "ServerVersion": "${spec.get().serverVersion.get()}"
+              "Main": "${spec.get().mainClass.get()}",
+              "ServerVersion": "${spec.get().serverVersion.get()}",
+              "IncludesAssetPack": true
             }
             """
                 .trimIndent()
