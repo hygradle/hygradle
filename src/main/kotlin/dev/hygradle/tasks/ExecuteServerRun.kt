@@ -1,32 +1,59 @@
 package dev.hygradle.tasks
 
-import java.nio.file.Path
+import kotlin.io.path.createSymbolicLinkPointingTo
+import kotlin.io.path.deleteIfExists
 import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.provider.Property
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 @DisableCachingByDefault
 abstract class ExecuteServerRun : JavaExec() {
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
-  @get:Internal abstract val gameDirectory: Property<Path>
+
+  @get:InputDirectory
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val runDirectory: DirectoryProperty
+
+  @get:Input abstract val modDirectories: MapProperty<String, Directory>
 
   init {
     mainClass.convention("com.hypixel.hytale.Main")
-    gameDirectory.convention(project.layout.projectDirectory.dir(".run").dir(name).asFile.toPath())
+    runDirectory.convention(project.layout.projectDirectory.dir(".run").dir(name))
   }
 
   @TaskAction
   override fun exec() {
-    gameDirectory.get().toFile().mkdirs()
+    val runDir = runDirectory.get().asFile
+    val modDir = runDirectory.dir("mods").get()
 
-    setWorkingDir(gameDirectory)
+    modDir.asFile.mkdir()
+
+    for (entry in modDirectories.get()) {
+      val dir = modDir.dir(entry.key).asFile.toPath()
+
+      dir.deleteIfExists()
+      dir.createSymbolicLinkPointingTo(entry.value.asFile.toPath())
+    }
+
+    workingDir = runDir
     jvmArgs("--enable-native-access=ALL-UNNAMED")
-    args = listOf("--disable-sentry", "--auth-mode=insecure")
+    args =
+        listOf(
+            "--disable-sentry",
+            "--auth-mode=insecure",
+            "--assets=\"C:\\Users\\remi\\AppData\\Roaming\\Hytale\\install\\release\\package\\game\\latest\\Assets.zip\"",
+        )
     classpath(classpathProvider)
+
     super.exec()
   }
 }

@@ -3,6 +3,7 @@ package dev.hygradle.internal
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.plugin.sourceSets
+import dev.hygradle.tasks.ExecuteServerRun
 import dev.hygradle.tasks.GeneratePluginManifest
 import dev.hygradle.tasks.PreparePluginAssets
 import java.util.Locale.getDefault
@@ -44,7 +45,34 @@ class TaskPlugin : GradlePlugin<Project> {
 
     val runs = project.hygradle().runs
 
-    runs.all {}
+    runs.all {
+      val run = this
+
+      val startServer =
+          project.tasks.register<ExecuteServerRun>("start${name.capitalize()}Server") {
+            group = "hygradle/runs/${run.name}"
+
+            classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
+
+            plugins
+                .filter { true } // TODO: Add a prop to specify plugins
+                .forEach {
+                  classpathProvider.from(
+                      it.sourceSetName
+                          .flatMap { name -> project.sourceSets().named(name) }
+                          .map { sourceSet -> sourceSet.output }
+                  )
+
+                  classpathProvider.from(it.runtimeClasspathConfiguration)
+
+                  if (it is LatePlugin)
+                      modDirectories.put(
+                          it.name,
+                          it.prepareAssets.flatMap { t -> t.assetDirectory },
+                      )
+                }
+          }
+    }
   }
 }
 
