@@ -13,7 +13,9 @@ abstract class PrepareRunDirectory : DefaultTask() {
   @get:OutputDirectory abstract val runDirectory: DirectoryProperty
 
   init {
-    runDirectory.convention(project.layout.projectDirectory.dir(".hygradle/run/$name"))
+    runDirectory.convention(
+        runName.map { project.layout.projectDirectory.dir(".hygradle/run/$it") }
+    )
   }
 
   @TaskAction

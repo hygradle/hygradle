@@ -30,7 +30,13 @@ abstract class ExecuteServerRun : JavaExec() {
 
     workingDir(runDir)
     jvmArgs("--enable-native-access=ALL-UNNAMED")
-    args = listOf("--disable-sentry", "--auth-mode=insecure")
+    standardInput = System.`in`
+    args =
+        listOf(
+            "--disable-sentry",
+            //            "--auth-mode=insecure",
+            "--assets=\"C:\\Users\\remi\\AppData\\Roaming\\Hytale\\install\\release\\package\\game\\latest\\Assets.zip\"",
+        )
     classpath(classpathProvider)
     super.exec()
   }

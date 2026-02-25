@@ -44,8 +44,14 @@ abstract class PreparePluginAssets : DefaultTask() {
 
   @TaskAction
   fun prepare() {
-    assetDirectory.get().asFile.deleteRecursively()
-    assetDirectory.get().asFile.mkdirs()
+    val assetDir = assetDirectory.get().asFile
+
+    if (assetDir.exists()) {
+      assetDir.listFiles().forEach { it.delete() }
+      assetDir.delete()
+    }
+
+    assetDir.mkdirs()
 
     symlink(pluginManifest.get().asFile)
     symlink(listOf("Common", "Server"))
