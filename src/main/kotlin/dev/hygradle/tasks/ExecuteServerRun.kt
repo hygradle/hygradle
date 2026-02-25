@@ -1,7 +1,10 @@
 package dev.hygradle.tasks
 
+import dev.hygradle.internal.service.HytaleAuth
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.services.ServiceReference
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.JavaExec
@@ -12,6 +15,9 @@ import org.gradle.work.DisableCachingByDefault
 
 @DisableCachingByDefault
 abstract class ExecuteServerRun : JavaExec() {
+
+  @get:ServiceReference abstract val hytaleAuth: Property<HytaleAuth>
+
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
   @get:InputDirectory

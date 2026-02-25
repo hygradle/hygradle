@@ -30,8 +30,9 @@ public abstract class FetchGameBundle : DefaultTask() {
         patchline
             .zip(
                 version,
-                { patchline, version -> "${patchline.toString().lowercase()}-${version}.zip" },
-            )
+            ) { patchline, version ->
+              "${patchline.toString().lowercase()}-${version}.zip"
+            }
             .map { fileName ->
               File(project.gradle.gradleUserHomeDir, "caches/hygradle/game/$fileName")
             }
