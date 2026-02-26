@@ -6,10 +6,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.server.cio.CIO as ServerCIO
-import io.ktor.server.engine.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import io.ktor.utils.io.core.*
 import java.awt.Desktop
 import java.net.URI
@@ -18,8 +14,9 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
+import org.gradle.api.GradleException
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 
@@ -33,32 +30,6 @@ abstract class HytaleAuth : BuildService<BuildServiceParameters.None> {
     val encodedState = stateWithPort(csrfState, 80)
     val codeVerifier = generateRandomString(64)
     val codeChallenge = generateCodeChallenge(codeVerifier)
-
-    val codeChannel = Channel<String>()
-
-    val server =
-        embeddedServer(ServerCIO, host = "127.0.0.1") {
-          routing {
-            get("/authorization-callback") {
-              val params = call.request.queryParameters
-              val code = params["code"]
-              val state = params["state"]
-
-              if (state.isNullOrEmpty() || csrfState != state) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid state")
-              }
-
-              if (code.isNullOrEmpty()) {
-                call.respond(HttpStatusCode.BadRequest, "No code received")
-              }
-
-              codeChannel.send(code!!)
-              call.respond(HttpStatusCode.OK)
-            }
-          }
-        }
-
-    server.start()
 
     val authUri =
         buildAuthURI(encodedState, codeChallenge, "https://accounts.hytale.com/consent/client")
@@ -77,11 +48,15 @@ abstract class HytaleAuth : BuildService<BuildServiceParameters.None> {
       }
     }
 
-    val code = codeChannel.receive()
+    try {
+      val code = OAuth.awaitAuthCode(csrfState)
+      println(code)
+    } catch (_: TimeoutCancellationException) {
+      throw GradleException("Authorization request timed out.")
+    }
 
-    server.stop()
-
-    println(exchangeForTokens(code, codeVerifier, "https://accounts.hytale.com/consent/client"))
+    //    println(exchangeForTokens(code, codeVerifier,
+    // "https://accounts.hytale.com/consent/client"))
   }
 
   private fun stateWithPort(state: String, port: Int) =
