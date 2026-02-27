@@ -3,6 +3,8 @@ package dev.hygradle.internal
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.plugin.sourceSets
+import dev.hygradle.internal.task.DownloadAssetBundle
+import dev.hygradle.internal.task.ExtractAssets
 import dev.hygradle.tasks.ExecuteServerRun
 import dev.hygradle.tasks.GeneratePluginManifest
 import dev.hygradle.tasks.PreparePluginAssets
@@ -14,6 +16,19 @@ import org.gradle.kotlin.dsl.register
 
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
+    val downloadAssetBundle =
+        project.tasks.register<DownloadAssetBundle>("downloadGameAssets") {
+          group = "hygradle/internal"
+          version.set(project.hygradle().hytale.version)
+          patchline.set(project.hygradle().hytale.patchline)
+        }
+
+    val extractAssets =
+        project.tasks.register<ExtractAssets>("extractAssets") {
+          group = "hygradle/internal"
+          assetBundle.set(downloadAssetBundle.flatMap { it.assetBundle })
+        }
+
     val plugins = project.hygradle().plugins
 
     plugins.all {
@@ -61,6 +76,7 @@ class TaskPlugin : GradlePlugin<Project> {
 
             runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
             classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
+            assets.set(extractAssets.flatMap { it.assets })
 
             plugins
                 .filter { true } // TODO: Add a prop to specify plugins

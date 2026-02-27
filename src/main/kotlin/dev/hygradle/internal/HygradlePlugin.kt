@@ -3,14 +3,11 @@
 package dev.hygradle.internal
 
 import dev.hygradle.internal.extension.HygradleExtension
-import dev.hygradle.internal.service.HytaleAuth
-import dev.hygradle.internal.task.DownloadGameAssets
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.register
 
 class HygradlePlugin : Plugin<PluginAware> {
   override fun apply(target: PluginAware): Unit =
@@ -22,15 +19,13 @@ class HygradlePlugin : Plugin<PluginAware> {
   private fun apply(project: Project): Unit =
       with(project) {
         extensions.create<HygradleExtension>("hygradle")
-        gradle.sharedServices.registerIfAbsent("hytaleauth", HytaleAuth::class.java)
-
-        tasks.register<DownloadGameAssets>("downloadGameAssets") { group = "hygradle/internal" }
 
         with(plugins) {
           apply(ConventionPlugin::class.java)
           apply(RepositoryPlugin::class.java)
           apply(DependencyPlugin::class.java)
           apply(TaskPlugin::class.java)
+          apply(ServicePlugin::class.java)
         }
       }
 }
