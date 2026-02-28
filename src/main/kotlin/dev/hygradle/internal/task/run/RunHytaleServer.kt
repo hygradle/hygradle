@@ -1,4 +1,4 @@
-package dev.hygradle.tasks
+package dev.hygradle.internal.task.run
 
 import dev.hygradle.internal.service.auth.AuthService
 import org.gradle.api.file.ConfigurableFileCollection
@@ -16,7 +16,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 @DisableCachingByDefault
-abstract class ExecuteServerRun : JavaExec() {
+abstract class RunHytaleServer : JavaExec() {
 
   @get:ServiceReference abstract val hytaleAuth: Property<AuthService>
 

@@ -1,4 +1,4 @@
-package dev.hygradle.tasks
+package dev.hygradle.internal.task.plugin
 
 import dev.hygradle.dsl.plugin.manifest.Manifest
 import org.gradle.api.DefaultTask
@@ -10,7 +10,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
-abstract class GeneratePluginManifest : DefaultTask() {
+abstract class GenerateManifest : DefaultTask() {
   @get:Nested abstract val spec: Property<Manifest>
 
   @get:OutputFile abstract val manifest: RegularFileProperty

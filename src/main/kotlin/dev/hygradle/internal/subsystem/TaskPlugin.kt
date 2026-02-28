@@ -1,14 +1,14 @@
-package dev.hygradle.internal
+package dev.hygradle.internal.subsystem
 
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.plugin.sourceSets
-import dev.hygradle.internal.task.DownloadAssetBundle
+import dev.hygradle.internal.task.DownloadAssets
 import dev.hygradle.internal.task.ExtractAssets
-import dev.hygradle.tasks.ExecuteServerRun
-import dev.hygradle.tasks.GeneratePluginManifest
-import dev.hygradle.tasks.PreparePluginAssets
-import dev.hygradle.tasks.PrepareRunDirectory
+import dev.hygradle.internal.task.plugin.AssembleAssets
+import dev.hygradle.internal.task.plugin.GenerateManifest
+import dev.hygradle.internal.task.run.PrepareRunDirectory
+import dev.hygradle.internal.task.run.RunHytaleServer
 import java.util.Locale.getDefault
 import org.gradle.api.Plugin as GradlePlugin
 import org.gradle.api.Project
@@ -17,7 +17,7 @@ import org.gradle.kotlin.dsl.register
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
     val downloadAssetBundle =
-        project.tasks.register<DownloadAssetBundle>("downloadGameAssets") {
+        project.tasks.register<DownloadAssets>("downloadGameAssets") {
           group = "hygradle/internal"
           version.set(project.hygradle().hytale.version)
           patchline.set(project.hygradle().hytale.patchline)
@@ -37,15 +37,15 @@ class TaskPlugin : GradlePlugin<Project> {
       if (plugin is LatePlugin) {
         val generateManifest =
             project.tasks
-                .register<GeneratePluginManifest>("generate${name.capitalize()}PluginManifest") {
+                .register<GenerateManifest>("generate${name.capitalize()}Manifest") {
                   group = "hygradle/plugins/${plugin.name}"
                   spec.set(plugin.manifest)
                 }
                 .also { plugin.generateManifest.set(generateManifest) }
 
-        val preparePluginAssets =
+        val assembleAssets =
             project.tasks
-                .register<PreparePluginAssets>("prepare${name.capitalize()}PluginAssets") {
+                .register<AssembleAssets>("prepare${name.capitalize()}Assets") {
                   group = "hygradle/plugins/${plugin.name}"
                   pluginName.set(plugin.name)
                   pluginManifest.set(generateManifest.flatMap { it.manifest })
@@ -55,7 +55,7 @@ class TaskPlugin : GradlePlugin<Project> {
                           .map { it.resources }
                   )
                 }
-                .also { plugin.prepareAssets.set(it) }
+                .also { plugin.assembleAssets.set(it) }
       }
     }
 
@@ -71,7 +71,7 @@ class TaskPlugin : GradlePlugin<Project> {
           }
 
       val startServer =
-          project.tasks.register<ExecuteServerRun>("start${name.capitalize()}Server") {
+          project.tasks.register<RunHytaleServer>("start${name.capitalize()}Server") {
             group = "hygradle/runs/${run.name}"
 
             runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
@@ -90,7 +90,7 @@ class TaskPlugin : GradlePlugin<Project> {
                   classpathProvider.from(it.runtimeClasspathConfiguration)
 
                   if (it is LatePlugin)
-                      classpathProvider.from(it.prepareAssets.flatMap { t -> t.assetDirectory })
+                      classpathProvider.from(it.assembleAssets.flatMap { t -> t.assetDirectory })
                 }
           }
     }

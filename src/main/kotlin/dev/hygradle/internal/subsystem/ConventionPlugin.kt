@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-package dev.hygradle.internal
+package dev.hygradle.internal.subsystem
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project

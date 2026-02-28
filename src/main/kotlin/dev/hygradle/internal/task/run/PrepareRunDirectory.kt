@@ -1,4 +1,4 @@
-package dev.hygradle.tasks
+package dev.hygradle.internal.task.run
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty

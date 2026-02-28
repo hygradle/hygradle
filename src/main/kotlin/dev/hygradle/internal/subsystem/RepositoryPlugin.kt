@@ -1,4 +1,4 @@
-package dev.hygradle.internal
+package dev.hygradle.internal.subsystem
 
 import dev.hygradle.internal.extension.hygradle
 import java.net.URI

@@ -1,4 +1,4 @@
-package dev.hygradle.tasks
+package dev.hygradle.internal.task.plugin
 
 import java.io.File
 import kotlin.io.path.ExperimentalPathApi
@@ -21,7 +21,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
-abstract class PreparePluginAssets : DefaultTask() {
+abstract class AssembleAssets : DefaultTask() {
   @get:Input abstract val pluginName: Property<String>
 
   @get:InputFiles

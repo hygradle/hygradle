@@ -9,6 +9,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
 abstract class ExtractAssets : Copy() {
@@ -38,6 +39,7 @@ abstract class ExtractAssets : Copy() {
     into(cacheDirectory)
   }
 
+  @TaskAction
   override fun copy() {
     rename { assets.get().asFile.name }
     println("Extracting assets...")

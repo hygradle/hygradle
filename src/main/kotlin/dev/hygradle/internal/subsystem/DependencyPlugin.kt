@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-package dev.hygradle.internal
+package dev.hygradle.internal.subsystem
 
 import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.internal.extension.hygradle

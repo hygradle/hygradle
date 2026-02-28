@@ -23,7 +23,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
-abstract class DownloadAssetBundle : DefaultTask() {
+abstract class DownloadAssets : DefaultTask() {
   @get:Internal protected val downloadAction = DownloadAction(project, this)
 
   @get:ServiceReference abstract val auth: Property<AuthService>

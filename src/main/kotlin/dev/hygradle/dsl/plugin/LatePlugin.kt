@@ -1,8 +1,8 @@
 package dev.hygradle.dsl.plugin
 
 import dev.hygradle.dsl.plugin.manifest.Manifest
-import dev.hygradle.tasks.GeneratePluginManifest
-import dev.hygradle.tasks.PreparePluginAssets
+import dev.hygradle.internal.task.plugin.AssembleAssets
+import dev.hygradle.internal.task.plugin.GenerateManifest
 import org.gradle.api.Action
 import org.gradle.api.provider.Property
 
@@ -11,7 +11,7 @@ interface LatePlugin : Plugin {
 
   fun manifest(manifest: Action<in Manifest>)
 
-  val generateManifest: Property<GeneratePluginManifest>
+  val generateManifest: Property<GenerateManifest>
 
-  val prepareAssets: Property<PreparePluginAssets>
+  val assembleAssets: Property<AssembleAssets>
 }

@@ -3,6 +3,11 @@
 package dev.hygradle.internal
 
 import dev.hygradle.internal.extension.HygradleExtension
+import dev.hygradle.internal.subsystem.ConventionPlugin
+import dev.hygradle.internal.subsystem.DependencyPlugin
+import dev.hygradle.internal.subsystem.RepositoryPlugin
+import dev.hygradle.internal.subsystem.ServicePlugin
+import dev.hygradle.internal.subsystem.TaskPlugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
