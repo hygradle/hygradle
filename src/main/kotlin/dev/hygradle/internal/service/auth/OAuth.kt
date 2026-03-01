@@ -28,7 +28,7 @@ import kotlinx.serialization.Serializable
 import org.gradle.api.GradleException
 
 object OAuth {
-  const val REDIRECT_URL = "https://accounts.hytale.com/consent/client"
+  private const val REDIRECT_URL = "https://accounts.hytale.com/consent/client"
   private val httpClient = HttpClient(ClientCIO) { install(ContentNegotiation) { json() } }
 
   @OptIn(ExperimentalTime::class)

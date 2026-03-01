@@ -1,16 +1,22 @@
 package dev.hygradle.internal.service.auth
 
+import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.kotlin.dsl.newInstance
 
-abstract class AuthService : BuildService<AuthService.Parameters> {
+abstract class AuthService @Inject constructor(objects: ObjectFactory) :
+    BuildService<AuthService.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters
+
+  val store = objects.newInstance<EncryptedStore>()
 
   protected val authTokenMutex = Mutex()
 
@@ -23,7 +29,7 @@ abstract class AuthService : BuildService<AuthService.Parameters> {
       authTokenMutex.withLock {
         if (!this::token.isInitialized)
             try {
-              this.token = loadExistingToken()
+              this.token = store.load()
             } catch (_: Exception) {
               this.token = OAuth.tokenFromBrowserFlow()
             }
@@ -33,9 +39,7 @@ abstract class AuthService : BuildService<AuthService.Parameters> {
         token
       }
 
-  protected fun loadExistingToken(): AuthToken {
-    throw Exception("teehee")
-  }
+  override fun close() = store.save(token)
 
   @OptIn(ExperimentalTime::class)
   protected fun isTokenExpired(token: AuthToken): Boolean =
