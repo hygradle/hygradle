@@ -14,7 +14,6 @@ ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio", version.ref = "
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 de-undercouch-download = { group = "de.undercouch.download", name = "de.undercouch.download.gradle.plugin", version = "5.7.0" }
 foojay-resolver-convention = { group = "org.gradle.toolchains.foojay-resolver-convention", name = "org.gradle.toolchains.foojay-resolver-convention.gradle.plugin", version = "1.0.0" }
-ksafe = { group = "eu.anifantakis", name = "ksafe", version = "1.6.0" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

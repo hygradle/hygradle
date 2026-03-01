@@ -17,7 +17,7 @@ import org.gradle.kotlin.dsl.register
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
     val downloadAssetBundle =
-        project.tasks.register<DownloadAssets>("downloadGameAssets") {
+        project.tasks.register<DownloadAssets>("downloadAssets") {
           group = "hygradle/internal"
           version.set(project.hygradle().hytale.version)
           patchline.set(project.hygradle().hytale.patchline)
@@ -41,21 +41,20 @@ class TaskPlugin : GradlePlugin<Project> {
                   group = "hygradle/plugins/${plugin.name}"
                   spec.set(plugin.manifest)
                 }
-                .also { plugin.generateManifest.set(generateManifest) }
+                .also { plugin.generateManifest.set(it) }
 
-        val assembleAssets =
-            project.tasks
-                .register<AssembleAssets>("prepare${name.capitalize()}Assets") {
-                  group = "hygradle/plugins/${plugin.name}"
-                  pluginName.set(plugin.name)
-                  pluginManifest.set(generateManifest.flatMap { it.manifest })
-                  pluginResources.from(
-                      plugin.sourceSetName
-                          .flatMap { project.sourceSets().named(it) }
-                          .map { it.resources }
-                  )
-                }
-                .also { plugin.assembleAssets.set(it) }
+        project.tasks
+            .register<AssembleAssets>("assemble${name.capitalize()}Assets") {
+              group = "hygradle/plugins/${plugin.name}"
+              pluginName.set(plugin.name)
+              pluginManifest.set(generateManifest.flatMap { it.manifest })
+              pluginResources.from(
+                  plugin.sourceSetName
+                      .flatMap { project.sourceSets().named(it) }
+                      .map { it.resources }
+              )
+            }
+            .also { plugin.assembleAssets.set(it) }
       }
     }
 

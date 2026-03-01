@@ -36,7 +36,7 @@ object OAuth {
     val csrfState = generateRandomString(32)
     val encodedState =
         encodeBase64("{\"state\":\"${csrfState}\",\"port\":\"8080\"}".encodeToByteArray())
-    val codeVerifier = generateRandomString(43)
+    val codeVerifier = generateRandomString(64)
     val codeChallenge = generateCodeChallenge(codeVerifier)
 
     val authUri = buildAuthURI(encodedState, codeChallenge)
@@ -57,7 +57,7 @@ object OAuth {
 
     try {
       val code = awaitAuthCode(csrfState)
-      val tokenPayload = fetchIdentityToken(code, codeVerifier)
+      val tokenPayload = fetchAccessToken(code, codeVerifier)
 
       return AuthToken(
           tokenPayload.accessToken,
@@ -112,7 +112,7 @@ object OAuth {
         }
       }
 
-  private suspend fun fetchIdentityToken(code: String, verifier: String): AuthTokenPayload =
+  private suspend fun fetchAccessToken(code: String, verifier: String): AuthTokenPayload =
       httpClient
           .submitForm(
               "https://oauth.accounts.hytale.com/oauth2/token",
@@ -142,7 +142,7 @@ object OAuth {
                     append("code_challenge_method", "S256")
                     append(
                         "scopes",
-                        listOf("openid", "offline_access", "auth:server").joinToString(" "),
+                        listOf("openid", "offline", "auth:server").joinToString(" "),
                     )
                   },
           )

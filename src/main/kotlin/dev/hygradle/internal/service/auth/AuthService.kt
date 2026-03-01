@@ -1,30 +1,31 @@
 package dev.hygradle.internal.service.auth
 
-import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
-import org.gradle.api.model.ObjectFactory
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
-import org.gradle.kotlin.dsl.newInstance
 
-abstract class AuthService @Inject constructor(objects: ObjectFactory) :
-    BuildService<AuthService.Parameters>, AutoCloseable {
-  interface Parameters : BuildServiceParameters
+abstract class AuthService : BuildService<AuthService.Parameters>, AutoCloseable {
+  interface Parameters : BuildServiceParameters {
+    val projectName: Property<String>
+    val authFile: RegularFileProperty
+  }
 
-  val store = objects.newInstance<EncryptedStore>()
+  val store = EncryptedStore(parameters.projectName, parameters.authFile)
 
   protected val authTokenMutex = Mutex()
 
   protected lateinit var token: AuthToken
 
-  fun getAuthToken(): AuthToken = runBlocking { getAuthTokenSuspend() }
+  fun getAccessToken(): AuthToken = runBlocking { getAccessTokenSuspend() }
 
-  suspend fun getAuthTokenSuspend(): AuthToken =
+  suspend fun getAccessTokenSuspend(): AuthToken =
       // TODO: This lock probably doesn't need to be on every call, lock only on load/write?
       authTokenMutex.withLock {
         if (!this::token.isInitialized)
@@ -47,3 +48,5 @@ abstract class AuthService @Inject constructor(objects: ObjectFactory) :
 }
 
 @Serializable data class AuthToken(val token: String, val expiry: Long)
+
+@Serializable data class SessionTokens(val identity: String, val session: String)

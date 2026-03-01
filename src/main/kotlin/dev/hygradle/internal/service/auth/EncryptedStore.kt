@@ -9,9 +9,9 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
-import javax.inject.Inject
 import kotlinx.serialization.json.Json
-import org.gradle.api.Project
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Provider
 
 /**
  * A naive encryption store for Hytale authentication tokens.
@@ -24,20 +24,21 @@ import org.gradle.api.Project
  *
  * TODO: Is it worth using the hardware UUID?
  */
-abstract class EncryptedStore @Inject constructor(private val project: Project) {
-  protected val encryptionKey: SecretKey = derive()
+class EncryptedStore(
+    val projectName: Provider<String>,
+    val authFile: RegularFileProperty,
+) {
+  val encryptionKey: SecretKey = derive()
 
-  protected val authFile =
-      project.layout.buildDirectory.dir("hygradle/auth").get().file("auth.enc").asFile
-
-  fun load(): AuthToken = Json.decodeFromString(decrypt(authFile.readBytes()).decodeToString())
+  fun load(): AuthToken =
+      Json.decodeFromString(decrypt(authFile.get().asFile.readBytes()).decodeToString())
 
   fun save(token: AuthToken) {
-    authFile.mkdirs()
-    authFile.writeBytes(encrypt(Json.encodeToString(AuthToken).encodeToByteArray()))
+    authFile.get().asFile.parentFile.mkdirs()
+    authFile.get().asFile.writeBytes(encrypt(Json.encodeToString(token).encodeToByteArray()))
   }
 
-  protected fun decrypt(encrypted: ByteArray): ByteArray {
+  fun decrypt(encrypted: ByteArray): ByteArray {
     val buffer = ByteBuffer.wrap(encrypted)
     val iv = ByteArray(GCM_IV_LENGTH)
     buffer.get(iv)
@@ -49,7 +50,7 @@ abstract class EncryptedStore @Inject constructor(private val project: Project) 
     return cipher.doFinal(cipherText)
   }
 
-  protected fun encrypt(plain: ByteArray): ByteArray {
+  fun encrypt(plain: ByteArray): ByteArray {
     val iv = ByteArray(GCM_IV_LENGTH)
     SecureRandom().nextBytes(iv)
     val cipher = Cipher.getInstance(ALGORITHM)
@@ -59,9 +60,8 @@ abstract class EncryptedStore @Inject constructor(private val project: Project) 
     return iv + cipherText
   }
 
-  protected fun derive(): SecretKey {
-    val spec =
-        PBEKeySpec(project.rootProject.name.toCharArray(), SALT, PBKDF2_ITERATIONS, KEY_LENGTH)
+  fun derive(): SecretKey {
+    val spec = PBEKeySpec(projectName.get().toCharArray(), SALT, PBKDF2_ITERATIONS, KEY_LENGTH)
 
     return SecretKeySpec(
         SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded,
@@ -69,7 +69,7 @@ abstract class EncryptedStore @Inject constructor(private val project: Project) 
     )
   }
 
-  protected companion object {
+  companion object {
     const val ALGORITHM = "AES/GCM/NoPadding"
     const val GCM_IV_LENGTH = 12
     const val GCM_TAG_LENGTH = 128

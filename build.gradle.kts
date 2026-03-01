@@ -49,7 +49,6 @@ dependencies {
   implementation(libs.ktor.server.core)
   implementation(libs.ktor.server.cio)
   implementation(libs.ktor.serialization.kotlinx.json)
-  //  implementation(libs.ksafe)
   implementation(libs.de.undercouch.download)
   implementation(libs.foojay.resolver.convention)
 }

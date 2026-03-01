@@ -58,7 +58,7 @@ abstract class DownloadAssets : DefaultTask() {
     val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
 
     runBlocking {
-      val authToken = auth.get().getAuthTokenSuspend()
+      val authToken = auth.get().getAccessTokenSuspend()
 
       val bundle: AssetBundle =
           client

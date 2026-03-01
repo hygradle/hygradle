@@ -45,6 +45,7 @@ abstract class RunHytaleServer : JavaExec() {
     standardInput = System.`in`
     args = listOf("--assets", assets.get().asFile.absolutePath, "--disable-sentry")
     classpath(classpathProvider)
+    environment("HYTALE_SERVER_IDENTITY_TOKEN", hytaleAuth.get().getAccessToken().token)
     super.exec()
   }
 }
