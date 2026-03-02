@@ -1,5 +1,7 @@
 package dev.hygradle.internal.extension
 
+import dev.hygradle.dsl.extension.Harness
+import dev.hygradle.dsl.extension.HotswapAgent
 import dev.hygradle.dsl.extension.Hygradle
 import dev.hygradle.dsl.hytale.Version
 import dev.hygradle.dsl.plugin.LatePlugin
@@ -19,6 +21,14 @@ abstract class HygradleExtension @Inject constructor(objects: ObjectFactory) : H
   override val hytale: Version = objects.newInstance<VersionImpl>()
 
   override fun hytale(configure: Action<in Version>) = configure.execute(hytale)
+
+  override val hotswapAgent: HotswapAgent = objects.newInstance<HotswapAgentExtension>()
+
+  override fun hotswapAgent(configure: Action<in HotswapAgent>) = configure.execute(hotswapAgent)
+
+  override val harness: Harness = objects.newInstance<HarnessExtension>()
+
+  override fun harness(configure: Action<in Harness>) = configure.execute(harness)
 
   override fun plugins(action: Action<ExtensiblePolymorphicDomainObjectContainer<Plugin>>) =
       action.execute(this.plugins)

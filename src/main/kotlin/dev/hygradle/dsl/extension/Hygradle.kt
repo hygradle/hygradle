@@ -18,4 +18,12 @@ interface Hygradle {
   val hytale: Version
 
   fun hytale(configure: Action<in Version>)
+
+  val hotswapAgent: HotswapAgent
+
+  fun hotswapAgent(configure: Action<in HotswapAgent>)
+
+  val harness: Harness
+
+  fun harness(configure: Action<in Harness>)
 }

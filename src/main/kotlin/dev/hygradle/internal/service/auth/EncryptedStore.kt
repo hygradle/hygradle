@@ -30,10 +30,10 @@ class EncryptedStore(
 ) {
   val encryptionKey: SecretKey = derive()
 
-  fun load(): AuthToken =
+  fun load(): AccessToken =
       Json.decodeFromString(decrypt(authFile.get().asFile.readBytes()).decodeToString())
 
-  fun save(token: AuthToken) {
+  fun save(token: AccessToken) {
     authFile.get().asFile.parentFile.mkdirs()
     authFile.get().asFile.writeBytes(encrypt(Json.encodeToString(token).encodeToByteArray()))
   }

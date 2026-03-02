@@ -2,7 +2,7 @@ package dev.hygradle.internal.task
 
 import de.undercouch.gradle.tasks.download.DownloadAction
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.auth.AuthService
+import dev.hygradle.internal.service.auth.AuthManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -13,48 +13,46 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.services.ServiceReference
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
 abstract class DownloadAssets : DefaultTask() {
   @get:Internal protected val downloadAction = DownloadAction(project, this)
 
-  @get:ServiceReference abstract val auth: Property<AuthService>
+  @get:ServiceReference abstract val auth: Property<AuthManager>
 
   @get:Input abstract val version: Property<String>
 
   @get:Input abstract val patchline: Property<Patchline>
 
-  @get:OutputFile abstract val assetBundle: RegularFileProperty
+  @get:OutputDirectory abstract val assetBundleCacheDirectory: DirectoryProperty
 
   init {
-    assetBundle.convention(
-        patchline
-            .zip(
-                version,
-            ) { patchline, version ->
-              "${patchline.toString().lowercase()}-${version}.zip"
-            }
-            .map {
-              project.layout.projectDirectory
-                  .dir(".gradle")
-                  .dir("caches")
-                  .dir("hygradle")
-                  .dir("bundles")
-                  .file(it)
-            }
+    assetBundleCacheDirectory.convention(
+        project.layout.projectDirectory.dir(".gradle").dir("caches").dir("hygradle").dir("bundles")
     )
   }
 
   @TaskAction
   fun downloadAssets() {
+    val cacheDir = assetBundleCacheDirectory.get()
+    val assetBundle = cacheDir.file("${patchline.get()}-${version.get()}.zip").asFile
+
+    // TODO: Figure out if there's a better way to do caching here. Plugin updates or source changes
+    // will bust the task cache and result in a full asset re-download even if the bundle is present
+    // and unchanged, and this is a deliberate choice to avoid that naively for now.
+    if (assetBundle.exists()) {
+      println("Bundle found for ${patchline.get()} version ${version.get()}, skipping download...")
+      return
+    }
+
     val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
 
     runBlocking {
@@ -64,19 +62,21 @@ abstract class DownloadAssets : DefaultTask() {
           client
               .get(
                   "https://account-data.hytale.com/game-assets/builds/${
-                    patchline.get().toString().lowercase()
-                  }/${version.get()}.zip"
+                      patchline.get().toString().lowercase()
+                    }/${version.get()}.zip"
               ) {
                 bearerAuth(authToken.token)
               }
               .body()
 
       println(
-          "Downloading assets for ${patchline.get().toString().lowercase()} version '${version.get()}'... "
+          "Downloading assets for ${
+              patchline.get().toString().lowercase()
+            } version '${version.get()}'... "
       )
 
       downloadAction.src(bundle.url)
-      downloadAction.dest(assetBundle.get())
+      downloadAction.dest(assetBundle)
       downloadAction.overwrite(true)
       downloadAction.quiet(true)
       downloadAction.execute().await()

@@ -26,7 +26,9 @@ class TaskPlugin : GradlePlugin<Project> {
     val extractAssets =
         project.tasks.register<ExtractAssets>("extractAssets") {
           group = "hygradle/internal"
-          assetBundle.set(downloadAssetBundle.flatMap { it.assetBundle })
+          version.set(project.hygradle().hytale.version)
+          patchline.set(project.hygradle().hytale.patchline)
+          bundleCache.from(downloadAssetBundle.map { it.assetBundleCacheDirectory.asFileTree })
         }
 
     val plugins = project.hygradle().plugins
@@ -75,7 +77,10 @@ class TaskPlugin : GradlePlugin<Project> {
 
             runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
             classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
-            assets.set(extractAssets.flatMap { it.assets })
+
+            assets.from(extractAssets.map { it.assetCache.asFileTree })
+            hotswapAgent.from(project.hygradle().hotswapAgent.hotswapAgentClasspath)
+            harness.from(project.hygradle().harness.harnessClasspath)
 
             plugins
                 .filter { true } // TODO: Add a prop to specify plugins

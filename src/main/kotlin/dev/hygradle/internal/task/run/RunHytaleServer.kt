@@ -1,14 +1,13 @@
 package dev.hygradle.internal.task.run
 
-import dev.hygradle.internal.service.auth.AuthService
+import dev.hygradle.internal.service.auth.AuthManager
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.services.ServiceReference
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -18,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault
 abstract class RunHytaleServer : JavaExec() {
 
-  @get:ServiceReference abstract val hytaleAuth: Property<AuthService>
+  @get:ServiceReference abstract val hytaleAuth: Property<AuthManager>
 
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
@@ -26,9 +25,13 @@ abstract class RunHytaleServer : JavaExec() {
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val runDirectory: DirectoryProperty
 
-  @get:InputFile
+  @get:InputFiles
   @get:PathSensitive(PathSensitivity.RELATIVE)
-  abstract val assets: RegularFileProperty
+  abstract val assets: ConfigurableFileCollection
+
+  @get:Classpath abstract val hotswapAgent: ConfigurableFileCollection
+
+  @get:Classpath abstract val harness: ConfigurableFileCollection
 
   init {
     mainClass.convention("com.hypixel.hytale.Main")
@@ -41,11 +44,23 @@ abstract class RunHytaleServer : JavaExec() {
     runDir.mkdirs()
 
     workingDir(runDir)
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    jvmArgs(
+        "--enable-native-access=ALL-UNNAMED",
+        "-XX:HotswapAgent=external",
+        "-javaagent:${hotswapAgent.singleFile}",
+    )
     standardInput = System.`in`
-    args = listOf("--assets", assets.get().asFile.absolutePath, "--disable-sentry")
-    classpath(classpathProvider)
-    environment("HYTALE_SERVER_IDENTITY_TOKEN", hytaleAuth.get().getAccessToken().token)
+    args =
+        listOf(
+            "--assets",
+            assets.singleFile.toString(),
+            "--disable-sentry",
+            "--accept-early-plugins",
+            "--early-plugins",
+            harness.singleFile.parentFile.toString(),
+        )
+    classpath(classpathProvider, hotswapAgent, harness)
+
     super.exec()
   }
 }

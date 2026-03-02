@@ -21,18 +21,54 @@ import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.gradle.api.GradleException
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
 
-object OAuth {
-  private const val REDIRECT_URL = "https://accounts.hytale.com/consent/client"
-  private val httpClient = HttpClient(ClientCIO) { install(ContentNegotiation) { json() } }
+abstract class AuthManager : BuildService<AuthManager.Parameters>, AutoCloseable {
+  interface Parameters : BuildServiceParameters {
+    val projectName: Property<String>
+    val authFile: RegularFileProperty
+  }
+
+  protected val httpClient = HttpClient(ClientCIO) { install(ContentNegotiation) { json() } }
+
+  protected val store = EncryptedStore(parameters.projectName, parameters.authFile)
+
+  protected val accessTokenMutex = Mutex()
+
+  protected lateinit var token: AccessToken
+
+  fun getAccessToken(): AccessToken = runBlocking { getAccessTokenSuspend() }
+
+  suspend fun getAccessTokenSuspend(): AccessToken =
+      // TODO: This lock probably doesn't need to be on every call, lock only on load/write?
+      accessTokenMutex.withLock {
+        if (!this::token.isInitialized)
+            try {
+              this.token = store.load()
+            } catch (_: Exception) {
+              this.token = startOauthBrowserFlow()
+            }
+
+        if (isTokenExpired(token)) this.token = startOauthBrowserFlow()
+
+        token
+      }
+
+  override fun close() = store.save(token)
 
   @OptIn(ExperimentalTime::class)
-  suspend fun tokenFromBrowserFlow(): AuthToken {
+  suspend fun startOauthBrowserFlow(): AccessToken {
     val csrfState = generateRandomString(32)
     val encodedState =
         encodeBase64("{\"state\":\"${csrfState}\",\"port\":\"8080\"}".encodeToByteArray())
@@ -56,10 +92,10 @@ object OAuth {
     }
 
     try {
-      val code = awaitAuthCode(csrfState)
-      val tokenPayload = fetchAccessToken(code, codeVerifier)
+      val code = listenForAuthCode(csrfState)
+      val tokenPayload = exchangeCodeForToken(code, codeVerifier)
 
-      return AuthToken(
+      return AccessToken(
           tokenPayload.accessToken,
           Clock.System.now().plus(tokenPayload.expiresIn.seconds).toEpochMilliseconds(),
       )
@@ -68,7 +104,7 @@ object OAuth {
     }
   }
 
-  private suspend fun awaitAuthCode(csrfState: String) =
+  protected suspend fun listenForAuthCode(csrfState: String) =
       // TODO: Make timeout configurable
       withTimeout(20.seconds) {
         val authCode = CompletableDeferred<String>()
@@ -112,7 +148,7 @@ object OAuth {
         }
       }
 
-  private suspend fun fetchAccessToken(code: String, verifier: String): AuthTokenPayload =
+  protected suspend fun exchangeCodeForToken(code: String, verifier: String): AccessTokenResponse =
       httpClient
           .submitForm(
               "https://oauth.accounts.hytale.com/oauth2/token",
@@ -127,7 +163,7 @@ object OAuth {
           )
           .body()
 
-  private fun buildAuthURI(state: String, codeChallenge: String) =
+  protected fun buildAuthURI(state: String, codeChallenge: String) =
       URLBuilder(
               protocol = URLProtocol.HTTPS,
               host = "oauth.accounts.hytale.com",
@@ -148,24 +184,34 @@ object OAuth {
           )
           .buildString()
 
-  private fun generateRandomString(
+  @OptIn(ExperimentalTime::class)
+  protected fun isTokenExpired(token: AccessToken): Boolean =
+      Clock.System.now().toEpochMilliseconds() > token.expiry
+
+  protected fun generateRandomString(
       length: Int,
       charPool: List<Char> = ('A'..'Z') + ('a'..'z') + ('0'..'9') + listOf('-', '.', '_', '~'),
   ) = String(CharArray(length) { charPool.random() })
 
-  private fun generateCodeChallenge(verifier: String) =
+  protected fun generateCodeChallenge(verifier: String) =
       encodeBase64(
           MessageDigest.getInstance("SHA-256")
               .also { it.update(verifier.encodeToByteArray()) }
               .digest()
       )
 
-  private fun encodeBase64(bytes: ByteArray) =
+  protected fun encodeBase64(bytes: ByteArray) =
       Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).encode(bytes)
+
+  companion object {
+    const val REDIRECT_URL = "https://accounts.hytale.com/consent/client"
+  }
 }
 
+@Serializable data class AccessToken(val token: String, val expiry: Long)
+
 @Serializable
-data class AuthTokenPayload(
+data class AccessTokenResponse(
     @SerialName("access_token") val accessToken: String,
     @SerialName("expires_in") val expiresIn: Int,
     @SerialName("token_type") val tokenType: String,
