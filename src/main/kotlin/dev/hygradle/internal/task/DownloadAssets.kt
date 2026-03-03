@@ -2,7 +2,7 @@ package dev.hygradle.internal.task
 
 import de.undercouch.gradle.tasks.download.DownloadAction
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.auth.AuthManager
+import dev.hygradle.internal.service.auth.AccessManager
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -26,7 +26,7 @@ import org.gradle.api.tasks.TaskAction
 abstract class DownloadAssets : DefaultTask() {
   @get:Internal protected val downloadAction = DownloadAction(project, this)
 
-  @get:ServiceReference abstract val auth: Property<AuthManager>
+  @get:ServiceReference abstract val auth: Property<AccessManager>
 
   @get:Input abstract val version: Property<String>
 
@@ -57,6 +57,7 @@ abstract class DownloadAssets : DefaultTask() {
 
     runBlocking {
       val authToken = auth.get().getAccessTokenSuspend()
+      print(authToken)
 
       val bundle: AssetBundle =
           client
@@ -65,7 +66,7 @@ abstract class DownloadAssets : DefaultTask() {
                       patchline.get().toString().lowercase()
                     }/${version.get()}.zip"
               ) {
-                bearerAuth(authToken.token)
+                bearerAuth(authToken)
               }
               .body()
 

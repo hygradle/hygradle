@@ -1,6 +1,6 @@
 package dev.hygradle.internal.task.run
 
-import dev.hygradle.internal.service.auth.AuthManager
+import dev.hygradle.internal.service.auth.AccessManager
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -17,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault
 abstract class RunHytaleServer : JavaExec() {
 
-  @get:ServiceReference abstract val hytaleAuth: Property<AuthManager>
+  @get:ServiceReference abstract val accessManager: Property<AccessManager>
 
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
