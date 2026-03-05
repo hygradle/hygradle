@@ -1,6 +1,6 @@
 package dev.hygradle.internal.task.run
 
-import dev.hygradle.internal.service.auth.AccessManager
+import dev.hygradle.internal.service.auth.OAuthManager
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -17,7 +17,7 @@ import org.gradle.work.DisableCachingByDefault
 @DisableCachingByDefault
 abstract class RunHytaleServer : JavaExec() {
 
-  @get:ServiceReference abstract val accessManager: Property<AccessManager>
+  @get:ServiceReference abstract val OAuthManager: Property<OAuthManager>
 
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
@@ -45,21 +45,13 @@ abstract class RunHytaleServer : JavaExec() {
 
     workingDir(runDir)
     jvmArgs(
-        "--enable-native-access=ALL-UNNAMED",
+        "-XX:+AllowEnhancedClassRedefinition",
         "-XX:HotswapAgent=external",
         "-javaagent:${hotswapAgent.singleFile}",
     )
     standardInput = System.`in`
-    args =
-        listOf(
-            "--assets",
-            assets.singleFile.toString(),
-            "--disable-sentry",
-            "--accept-early-plugins",
-            "--early-plugins",
-            harness.singleFile.parentFile.toString(),
-        )
-    classpath(classpathProvider, hotswapAgent, harness)
+    args = listOf("--assets", assets.singleFile.toString(), "--disable-sentry")
+    classpath(classpathProvider, harness)
 
     super.exec()
   }

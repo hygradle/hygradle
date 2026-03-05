@@ -27,6 +27,7 @@ kotlin {
     apiVersion = KotlinVersion.KOTLIN_2_3
     languageVersion = apiVersion
     jvmTarget = JvmTarget.fromTarget("25")
+    freeCompilerArgs.add("-Xcontext-parameters")
   }
 }
 
@@ -43,14 +44,16 @@ testing.suites {
 dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.ktor.client.core)
-  implementation(libs.ktor.client.cio)
-  implementation(libs.ktor.client.content.negotiation)
-  implementation(libs.ktor.server.core)
-  implementation(libs.ktor.server.cio)
-  implementation(libs.ktor.serialization.kotlinx.json)
+  implementation(libs.retrofit)
+  implementation(libs.retrofit.kotlinx.serialization)
   implementation(libs.de.undercouch.download)
   implementation(libs.foojay.resolver.convention)
+  implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
+  implementation(libs.ktor.client.core)
+  implementation(libs.ktor.client.cio)
+  implementation(libs.ktor.client.auth)
+  implementation(libs.ktor.client.content.negotiation)
+  implementation(libs.ktor.serialization.kotlinx.json)
 }
 
 spotless {

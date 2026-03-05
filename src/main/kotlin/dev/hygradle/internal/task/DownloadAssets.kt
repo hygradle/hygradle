@@ -2,14 +2,7 @@ package dev.hygradle.internal.task
 
 import de.undercouch.gradle.tasks.download.DownloadAction
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.auth.AccessManager
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.future.await
+import dev.hygradle.internal.service.auth.OAuthManager
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import org.gradle.api.DefaultTask
@@ -26,7 +19,7 @@ import org.gradle.api.tasks.TaskAction
 abstract class DownloadAssets : DefaultTask() {
   @get:Internal protected val downloadAction = DownloadAction(project, this)
 
-  @get:ServiceReference abstract val auth: Property<AccessManager>
+  @get:ServiceReference abstract val auth: Property<OAuthManager>
 
   @get:Input abstract val version: Property<String>
 
@@ -44,6 +37,7 @@ abstract class DownloadAssets : DefaultTask() {
   fun downloadAssets() {
     val cacheDir = assetBundleCacheDirectory.get()
     val assetBundle = cacheDir.file("${patchline.get()}-${version.get()}.zip").asFile
+    auth.get().getAccessToken()
 
     // TODO: Figure out if there's a better way to do caching here. Plugin updates or source changes
     // will bust the task cache and result in a full asset re-download even if the bundle is present
@@ -53,34 +47,12 @@ abstract class DownloadAssets : DefaultTask() {
       return
     }
 
-    val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
-
     runBlocking {
-      val authToken = auth.get().getAccessTokenSuspend()
-      print(authToken)
-
-      val bundle: AssetBundle =
-          client
-              .get(
-                  "https://account-data.hytale.com/game-assets/builds/${
-                      patchline.get().toString().lowercase()
-                    }/${version.get()}.zip"
-              ) {
-                bearerAuth(authToken)
-              }
-              .body()
-
-      println(
-          "Downloading assets for ${
-              patchline.get().toString().lowercase()
-            } version '${version.get()}'... "
-      )
-
-      downloadAction.src(bundle.url)
-      downloadAction.dest(assetBundle)
-      downloadAction.overwrite(true)
-      downloadAction.quiet(true)
-      downloadAction.execute().await()
+      //      downloadAction.src(bundle.url)
+      //      downloadAction.dest(assetBundle)
+      //      downloadAction.overwrite(true)
+      //      downloadAction.quiet(true)
+      //      downloadAction.execute().await()
     }
   }
 }
