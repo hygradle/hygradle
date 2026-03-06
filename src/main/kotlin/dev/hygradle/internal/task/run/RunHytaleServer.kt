@@ -1,6 +1,6 @@
 package dev.hygradle.internal.task.run
 
-import dev.hygradle.internal.service.auth.OAuthManager
+import dev.hygradle.internal.service.HytaleAccountService
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -16,8 +16,7 @@ import org.gradle.work.DisableCachingByDefault
 
 @DisableCachingByDefault
 abstract class RunHytaleServer : JavaExec() {
-
-  @get:ServiceReference abstract val OAuthManager: Property<OAuthManager>
+  @get:ServiceReference abstract val account: Property<HytaleAccountService>
 
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
@@ -39,11 +38,20 @@ abstract class RunHytaleServer : JavaExec() {
 
   @TaskAction
   override fun exec() {
+    val profiles = account.get().getAvailableProfiles()
+
+    // TODO: Allow the user to pass their UUID as a config option
+    val sessionTokens = account.get().createGameSession(profiles.profiles.first().uuid)
+
     val runDir = runDirectory.get().asFile
 
     runDir.mkdirs()
 
     workingDir(runDir)
+
+    environment("HYTALE_SERVER_SESSION_TOKEN", sessionTokens.sessionToken)
+    environment("HYTALE_SERVER_IDENTITY_TOKEN", sessionTokens.identityToken)
+
     jvmArgs(
         "-XX:+AllowEnhancedClassRedefinition",
         "-XX:HotswapAgent=external",

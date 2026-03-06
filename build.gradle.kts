@@ -44,16 +44,14 @@ testing.suites {
 dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.retrofit)
-  implementation(libs.retrofit.kotlinx.serialization)
   implementation(libs.de.undercouch.download)
   implementation(libs.foojay.resolver.convention)
-  implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
   implementation(libs.ktor.client.core)
   implementation(libs.ktor.client.cio)
   implementation(libs.ktor.client.auth)
   implementation(libs.ktor.client.content.negotiation)
   implementation(libs.ktor.serialization.kotlinx.json)
+  implementation("io.ktor:ktor-client-logging:${libs.versions.ktor.get()}")
 }
 
 spotless {

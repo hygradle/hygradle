@@ -2,9 +2,9 @@ package dev.hygradle.internal.task
 
 import de.undercouch.gradle.tasks.download.DownloadAction
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.auth.OAuthManager
+import dev.hygradle.internal.service.HytaleAccountService
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -19,7 +19,7 @@ import org.gradle.api.tasks.TaskAction
 abstract class DownloadAssets : DefaultTask() {
   @get:Internal protected val downloadAction = DownloadAction(project, this)
 
-  @get:ServiceReference abstract val auth: Property<OAuthManager>
+  @get:ServiceReference abstract val account: Property<HytaleAccountService>
 
   @get:Input abstract val version: Property<String>
 
@@ -37,7 +37,6 @@ abstract class DownloadAssets : DefaultTask() {
   fun downloadAssets() {
     val cacheDir = assetBundleCacheDirectory.get()
     val assetBundle = cacheDir.file("${patchline.get()}-${version.get()}.zip").asFile
-    auth.get().getAccessToken()
 
     // TODO: Figure out if there's a better way to do caching here. Plugin updates or source changes
     // will bust the task cache and result in a full asset re-download even if the bundle is present
@@ -47,14 +46,14 @@ abstract class DownloadAssets : DefaultTask() {
       return
     }
 
+    val bundleUrl = account.get().getAssetBundle(version.get(), patchline.get())
+
     runBlocking {
-      //      downloadAction.src(bundle.url)
-      //      downloadAction.dest(assetBundle)
-      //      downloadAction.overwrite(true)
-      //      downloadAction.quiet(true)
-      //      downloadAction.execute().await()
+      downloadAction.src(bundleUrl)
+      downloadAction.dest(assetBundle)
+      downloadAction.overwrite(true)
+      downloadAction.quiet(true)
+      downloadAction.execute().await()
     }
   }
 }
-
-@Serializable data class AssetBundle(val url: String)
