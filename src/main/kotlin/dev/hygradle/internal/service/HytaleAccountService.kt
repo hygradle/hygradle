@@ -246,6 +246,19 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
             setBody(CreateGameSessionRequest(profileUuid))
           }
           .body()
+
+  fun terminateSession(sessionToken: String) = runBlocking { terminateSessionSuspend(sessionToken) }
+
+  suspend fun terminateSessionSuspend(sessionToken: String) =
+      // Use a separate client here because naturally auth is the session token itself
+      HttpClient(CIO).delete {
+        url {
+          withSessionBase()
+          appendPathSegments("game-session")
+        }
+
+        bearerAuth(sessionToken)
+      }
 }
 
 @Serializable data class SerializableBearerToken(val accessToken: String, val refreshToken: String)

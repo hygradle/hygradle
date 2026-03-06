@@ -55,12 +55,15 @@ abstract class RunHytaleServer : JavaExec() {
     jvmArgs(
         "-XX:+AllowEnhancedClassRedefinition",
         "-XX:HotswapAgent=external",
-        "-javaagent:${hotswapAgent.singleFile}",
+        "-javaagent:${hotswapAgent.singleFile}=LOGGER=debug",
     )
     standardInput = System.`in`
     args = listOf("--assets", assets.singleFile.toString(), "--disable-sentry")
     classpath(classpathProvider, harness)
 
     super.exec()
+
+    // TODO: Maybe this needs to be in a task finalizer?
+    account.get().terminateSession(sessionTokens.sessionToken)
   }
 }
