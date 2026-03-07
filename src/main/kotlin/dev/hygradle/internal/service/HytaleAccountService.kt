@@ -1,6 +1,5 @@
 package dev.hygradle.internal.service
 
-import dev.hygradle.dsl.hytale.Patchline
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -202,8 +201,8 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
 
   fun getAvailableProfiles() = runBlocking { getAvailableProfilesSuspend() }
 
-  fun getAssetBundle(version: String, patchline: Patchline) = runBlocking {
-    getAssetBundleSuspend(version, patchline)
+  fun getAssetBundle(patchline: String, version: String) = runBlocking {
+    getAssetBundleSuspend(patchline, version)
   }
 
   fun createGameSession(profileUuid: String) = runBlocking { createGameSessionSuspend(profileUuid) }
@@ -218,7 +217,7 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
           }
           .body()
 
-  suspend fun getAssetBundleSuspend(version: String, patchline: Patchline) =
+  suspend fun getAssetBundleSuspend(patchline: String, version: String) =
       client
           .get {
             url {
@@ -226,7 +225,7 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
               appendPathSegments(
                   "game-assets",
                   "builds",
-                  patchline.toString().lowercase(),
+                  patchline,
                   "$version.zip",
               )
             }

@@ -55,7 +55,7 @@ abstract class RunHytaleServer : JavaExec() {
     jvmArgs(
         "-XX:+AllowEnhancedClassRedefinition",
         "-XX:HotswapAgent=external",
-        "-javaagent:${hotswapAgent.singleFile}=LOGGER=debug",
+        "-javaagent:${hotswapAgent.singleFile}",
     )
     standardInput = System.`in`
     args = listOf("--assets", assets.singleFile.toString(), "--disable-sentry")
