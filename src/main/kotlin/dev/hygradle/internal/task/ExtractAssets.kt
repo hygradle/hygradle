@@ -6,14 +6,14 @@ import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 
-@CacheableTask
+@UntrackedTask(because = "Content-hashing the assets is very time-consuming.")
 abstract class ExtractAssets : DefaultTask() {
   @get:Inject abstract val fs: FileSystemOperations
 
@@ -39,16 +39,12 @@ abstract class ExtractAssets : DefaultTask() {
 
     cacheDir.asFileTree.visit { if (file != assets) file.delete() }
 
-    println(assets)
-    println(assets.exists())
-
     if (assets.exists()) return
-    else {
-      fs.copy {
-        from(archives.zipTree(assetBundle).matching { include(ASSET_BUNDLE_NAME) }.singleFile)
-        into(cacheDir)
-        rename { assets.name }
-      }
+
+    fs.copy {
+      from(archives.zipTree(assetBundle).matching { include(ASSET_BUNDLE_NAME) }.singleFile)
+      into(cacheDir)
+      rename { assets.name }
     }
   }
 

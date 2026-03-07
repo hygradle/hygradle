@@ -121,7 +121,7 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
 
     return pollDeviceToken(
             codeResponse.deviceCode,
-            30.seconds,
+            100.seconds,
             codeResponse.interval.seconds,
         )
         .let { BearerTokens(it.accessToken, it.refreshToken) }

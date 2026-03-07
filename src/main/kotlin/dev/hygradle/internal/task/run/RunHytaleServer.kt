@@ -58,7 +58,15 @@ abstract class RunHytaleServer : JavaExec() {
         "-javaagent:${hotswapAgent.singleFile}",
     )
     standardInput = System.`in`
-    args = listOf("--assets", assets.singleFile.toString(), "--disable-sentry")
+    args =
+        listOf(
+            "--assets",
+            assets.singleFile.toString(),
+            "--disable-sentry",
+            "--accept-early-plugins",
+            "--early-plugins",
+            harness.singleFile.parentFile.toString(),
+        )
     classpath(classpathProvider, harness)
 
     super.exec()

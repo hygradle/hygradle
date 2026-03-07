@@ -7,12 +7,12 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.services.ServiceReference
-import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 
-@CacheableTask
+@UntrackedTask(because = "Content-hashing the asset bundle is very time-consuming.")
 abstract class DownloadAssets : DefaultTask() {
   @get:ServiceReference abstract val account: Property<HytaleAccountService>
 
@@ -40,8 +40,6 @@ abstract class DownloadAssets : DefaultTask() {
 
     // TODO: Figure out how to better avoid downloading with finer-grained caching? idk
     if (assetBundle.exists()) return
-
-    println("Downloading asset bundle for $patchline version $version...")
 
     val bundleUrl = account.get().getAssetBundle(patchline, version)
 
