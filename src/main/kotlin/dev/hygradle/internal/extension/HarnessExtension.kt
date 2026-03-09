@@ -4,21 +4,16 @@ package dev.hygradle.internal.extension
 
 import dev.hygradle.dsl.extension.Harness
 import javax.inject.Inject
-import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 
 abstract class HarnessExtension @Inject constructor(project: Project) : Harness {
-  override val harnessOnly: NamedDomainObjectProvider<out Configuration> =
-      project.configurations.dependencyScope("harnessOnly")
+  override val harnessOnly = project.configurations.dependencyScope("harnessOnly")
 
-  override val harnessClasspath: NamedDomainObjectProvider<out Configuration> =
-      project.configurations.resolvable("harnessClasspath")
+  override val harnessClasspath =
+      project.configurations.resolvable("harnessClasspath") { extendsFrom(harnessOnly) }
 
   init {
     version.convention("0.0.1")
-
-    harnessClasspath.configure { extendsFrom(harnessOnly) }
 
     project.dependencies.addProvider(
         harnessOnly.name,

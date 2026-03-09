@@ -27,7 +27,6 @@ kotlin {
     apiVersion = KotlinVersion.KOTLIN_2_3
     languageVersion = apiVersion
     jvmTarget = JvmTarget.fromTarget("25")
-    freeCompilerArgs.add("-Xcontext-parameters")
   }
 }
 
@@ -39,6 +38,8 @@ testing.suites {
         useSpock()
         dependencies { implementation(gradleTestKit()) }
       }
+
+  val integrationTest by registering(JvmTestSuite::class) { useSpock() }
 }
 
 dependencies {

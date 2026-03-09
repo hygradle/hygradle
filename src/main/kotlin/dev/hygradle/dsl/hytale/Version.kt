@@ -1,7 +1,8 @@
 package dev.hygradle.dsl.hytale
 
 import org.gradle.api.NamedDomainObjectProvider
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.DependencyScopeConfiguration
+import org.gradle.api.artifacts.ResolvableConfiguration
 import org.gradle.api.provider.Property
 
 interface Version {
@@ -13,7 +14,7 @@ interface Version {
 
   val decompile: Property<Boolean>
 
-  val hytaleOnly: NamedDomainObjectProvider<out Configuration>
+  val hytaleOnly: NamedDomainObjectProvider<DependencyScopeConfiguration>
 
-  val hytaleClasspath: NamedDomainObjectProvider<out Configuration>
+  val hytaleClasspath: NamedDomainObjectProvider<ResolvableConfiguration>
 }

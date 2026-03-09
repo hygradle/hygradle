@@ -90,7 +90,7 @@ abstract class HytaleAccountService : BuildService<HytaleAccountService.Paramete
 
     return try {
       refreshToken(oldTokens)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       startDeviceFlow()
     }
   }

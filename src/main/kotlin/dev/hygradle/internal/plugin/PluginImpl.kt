@@ -6,9 +6,7 @@ import dev.hygradle.dsl.plugin.DependencyHandler
 import dev.hygradle.dsl.plugin.Plugin
 import javax.inject.Inject
 import org.gradle.api.Action
-import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
@@ -20,24 +18,26 @@ abstract class PluginImpl
 internal constructor(private val name: String, private val project: Project) : Plugin {
   override fun getName(): String = name
 
-  override val compileOnlyConfiguration: NamedDomainObjectProvider<out Configuration> =
+  override val compileOnlyConfiguration =
       project.configurations.dependencyScope("${name}CompileOnly") {
         description = "Compile-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  override val compileClasspathConfiguration: NamedDomainObjectProvider<out Configuration> =
+  override val compileClasspathConfiguration =
       project.configurations.resolvable("${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
+        extendsFrom(compileOnlyConfiguration)
       }
 
-  override val runtimeOnlyConfiguration: NamedDomainObjectProvider<out Configuration> =
+  override val runtimeOnlyConfiguration =
       project.configurations.dependencyScope("${name}RuntimeOnly") {
         description = "Runtime-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  override val runtimeClasspathConfiguration: NamedDomainObjectProvider<out Configuration> =
+  override val runtimeClasspathConfiguration =
       project.configurations.resolvable("${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
+        extendsFrom(runtimeOnlyConfiguration)
       }
 
   override val dependencies: DependencyHandler =
@@ -62,8 +62,6 @@ internal constructor(private val name: String, private val project: Project) : P
       )
     }
 
-    compileClasspathConfiguration.configure { extendsFrom(compileOnlyConfiguration) }
-
     runtimeOnlyConfiguration.configure {
       extendsFrom(
           sourceSetName
@@ -71,8 +69,6 @@ internal constructor(private val name: String, private val project: Project) : P
               .flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
       )
     }
-
-    runtimeClasspathConfiguration.configure { extendsFrom(runtimeOnlyConfiguration) }
   }
 }
 
