@@ -33,6 +33,12 @@ kotlin {
 tasks.withType<ShadowJar> { archiveClassifier = null as String? }
 
 testing.suites {
+  val test by
+      getting(JvmTestSuite::class) {
+        useSpock()
+        dependencies { implementation(libs.ktor.client.mock) }
+      }
+
   val functionalTest by
       registering(JvmTestSuite::class) {
         useSpock()
@@ -51,7 +57,6 @@ dependencies {
   implementation(libs.ktor.client.auth)
   implementation(libs.ktor.client.content.negotiation)
   implementation(libs.ktor.serialization.kotlinx.json)
-  implementation("io.ktor:ktor-client-logging:${libs.versions.ktor.get()}")
 }
 
 spotless {

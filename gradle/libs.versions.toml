@@ -6,16 +6,14 @@ ktor = "3.4.1"
 [libraries]
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.10.0" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.10.2" }
-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version = "3.0.0" }
-retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version = "3.0.0" }
-de-undercouch-download = { group = "de.undercouch.download", name = "de.undercouch.download.gradle.plugin", version = "5.7.0" }
 foojay-resolver-convention = { group = "org.gradle.toolchains.foojay-resolver-convention", name = "org.gradle.toolchains.foojay-resolver-convention.gradle.plugin", version = "1.0.0" }
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-
+ 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }

@@ -1,12 +1,12 @@
 package dev.hygradle.internal.service.hytale
 
+import dev.hygradle.internal.service.AssetBundleResponse
 import dev.hygradle.internal.service.DeviceCodeResponse
 import dev.hygradle.internal.service.GetProfileResponse
 import dev.hygradle.internal.service.TokenResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -22,13 +22,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 
 class HytaleServiceImpl(
-    engine: HttpClientEngineFactory<HttpClientEngineConfig>,
+    engine: HttpClientEngine,
     tokenLoader: suspend () -> BearerTokens?,
 ) : HytaleService {
   val tokens = mutableListOf<BearerTokens>()
 
   val client =
-      HttpClient(CIO) {
+      HttpClient(engine) {
         install(ContentNegotiation) { json() }
 
         install(Auth) {
@@ -171,8 +171,24 @@ class HytaleServiceImpl(
     host = "account-data.hytale.com"
   }
 
-  override fun getAssetBundle(patchline: String, version: String) {
-    TODO("Not yet implemented")
+  suspend fun getAssetBundleSuspend(patchline: String, version: String) =
+      client
+          .get {
+            url {
+              withAccountBase()
+              appendPathSegments(
+                  "game-assets",
+                  "builds",
+                  patchline,
+                  "$version.zip",
+              )
+            }
+          }
+          .body<AssetBundleResponse>()
+          .url
+
+  override fun getAssetBundle(patchline: String, version: String) = runBlocking {
+    getAssetBundleSuspend(patchline, version)
   }
 
   suspend fun getAvailableProfilesSuspend(): GetProfileResponse =
