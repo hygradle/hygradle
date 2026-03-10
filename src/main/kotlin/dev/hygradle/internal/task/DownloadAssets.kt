@@ -33,12 +33,10 @@ abstract class DownloadAssets : DefaultTask() {
 
   @TaskAction
   fun downloadAssets() {
-    val patchline = patchline.get().toString().lowercase()
+    val patchline = patchline.get()
     val version = version.get()
     val cacheDir = assetBundleCacheDirectory.get()
     val assetBundle = cacheDir.file("$patchline-$version.zip").asFile
-
-    println(hytale.get().service.getAssetBundle(patchline, version))
 
     // TODO: Better way to detect stale bundles? Last modified maybe??
     cacheDir.asFileTree.visit { if (file != assetBundle) file.delete() }
@@ -48,6 +46,7 @@ abstract class DownloadAssets : DefaultTask() {
 
     val bundleUrl = hytale.get().service.getAssetBundle(patchline, version)
 
+    // TODO: Use ktor client buffered streaming for this, through a worker??
     URI(bundleUrl).toURL().openStream().buffered().use { inputStream ->
       assetBundle.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
     }

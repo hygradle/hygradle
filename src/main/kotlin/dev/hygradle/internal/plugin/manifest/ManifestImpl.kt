@@ -16,8 +16,8 @@ internal constructor(pluginName: String, private val objects: ObjectFactory, pro
     Manifest {
   init {
     name.convention(pluginName)
-    group.convention(project.group.toString())
-    version.convention(project.version.toString())
+    group.convention(project.provider { project.group.toString() })
+    version.convention(project.provider { project.version.toString() })
     serverVersion.convention(project.hygradle().hytale.version)
   }
 

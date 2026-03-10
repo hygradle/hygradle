@@ -1,5 +1,6 @@
 package dev.hygradle.internal.service.hytale
 
+import dev.hygradle.dsl.hytale.Patchline
 import dev.hygradle.internal.service.AssetBundleResponse
 import dev.hygradle.internal.service.DeviceCodeResponse
 import dev.hygradle.internal.service.GetProfileResponse
@@ -20,11 +21,17 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.slf4j.LoggerFactory
 
 class HytaleServiceImpl(
     engine: HttpClientEngine,
+    private val oauthBaseUrl: String,
+    private val accountBaseUrl: String,
+    private val sessionBaseUrl: String,
     tokenLoader: suspend () -> BearerTokens?,
 ) : HytaleService {
+  private val logger = LoggerFactory.getLogger(HytaleServiceImpl::class.java)
+
   val tokens = mutableListOf<BearerTokens>()
 
   val client =
@@ -157,21 +164,18 @@ class HytaleServiceImpl(
   }
 
   fun URLBuilder.withOAuthBase() {
-    protocol = URLProtocol.HTTPS
-    host = "oauth.accounts.hytale.com"
+    takeFrom(oauthBaseUrl)
   }
 
   fun URLBuilder.withSessionBase() {
-    protocol = URLProtocol.HTTPS
-    host = "sessions.hytale.com"
+    takeFrom(sessionBaseUrl)
   }
 
   fun URLBuilder.withAccountBase() {
-    protocol = URLProtocol.HTTPS
-    host = "account-data.hytale.com"
+    takeFrom(accountBaseUrl)
   }
 
-  suspend fun getAssetBundleSuspend(patchline: String, version: String) =
+  suspend fun getAssetBundleSuspend(patchline: Patchline, version: String) =
       client
           .get {
             url {
@@ -179,7 +183,7 @@ class HytaleServiceImpl(
               appendPathSegments(
                   "game-assets",
                   "builds",
-                  patchline,
+                  patchline.cdnSlug,
                   "$version.zip",
               )
             }
@@ -187,7 +191,7 @@ class HytaleServiceImpl(
           .body<AssetBundleResponse>()
           .url
 
-  override fun getAssetBundle(patchline: String, version: String) = runBlocking {
+  override fun getAssetBundle(patchline: Patchline, version: String) = runBlocking {
     getAssetBundleSuspend(patchline, version)
   }
 

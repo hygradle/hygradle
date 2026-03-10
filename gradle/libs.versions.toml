@@ -13,10 +13,13 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
- 
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version = "6.0.2" }
+wiremock = { group = "org.wiremock", name = "wiremock", version = "3.13.0" }
+
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }
-spotless = { id = "com.diffplug.spotless", version = "8.1.0" }
+spotless = { id = "com.diffplug.spotless", version = "8.3.0" }
 shadow = { id = "com.gradleup.shadow", version = "9.3.0" }
 dokka = { id = "org.jetbrains.dokka", version = "2.1.0" }
+git-version = { id = "com.palantir.git-version", version = "5.0.0" }

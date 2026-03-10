@@ -4,7 +4,6 @@ package dev.hygradle.internal.subsystem
 
 import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.internal.extension.hygradle
-import dev.hygradle.internal.hytale.VersionImpl
 import dev.hygradle.internal.plugin.sourceSets
 import org.gradle.api.Plugin as GradlePlugin
 import org.gradle.api.Project
@@ -15,7 +14,7 @@ class DependencyPlugin : GradlePlugin<Project> {
     project.hygradle().plugins.withType<Plugin>().all {
       project.configurations
           .named(project.sourceSets().getByName(sourceSetName.get()).compileOnlyConfigurationName)
-          .configure { extendsFrom((project.hygradle().hytale as VersionImpl).hytaleOnly) }
+          .configure { extendsFrom(project.hygradle().hytale.hytaleOnly) }
     }
   }
 }

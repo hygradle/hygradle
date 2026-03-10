@@ -2,7 +2,6 @@ package dev.hygradle.internal.subsystem
 
 import dev.hygradle.dsl.plugin.LatePlugin
 import dev.hygradle.internal.extension.hygradle
-import dev.hygradle.internal.hytale.VersionImpl
 import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.internal.task.DownloadAssets
 import dev.hygradle.internal.task.ExtractAssets
@@ -75,7 +74,7 @@ class TaskPlugin : GradlePlugin<Project> {
             group = "hygradle/runs/${run.name}"
 
             runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
-            classpathProvider.from((project.hygradle().hytale as VersionImpl).hytaleClasspath)
+            classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
 
             assets.from(extractAssets.map { it.assetCacheDirectory.asFileTree })
             hotswapAgent.from(project.hygradle().hotswapAgent.hotswapAgentClasspath)

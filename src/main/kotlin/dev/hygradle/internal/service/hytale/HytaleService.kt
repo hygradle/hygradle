@@ -1,7 +1,9 @@
 package dev.hygradle.internal.service.hytale
 
+import dev.hygradle.dsl.hytale.Patchline
+
 interface HytaleService {
-  fun getAssetBundle(patchline: String, version: String): String
+  fun getAssetBundle(patchline: Patchline, version: String): String
 
   fun getAvailableProfiles()
 

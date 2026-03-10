@@ -1,13 +1,10 @@
 @file:Suppress("UnstableApiUsage", "Unused")
 
+import com.diffplug.gradle.spotless.SpotlessTask
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
-
-group = "dev.hygradle"
-
-version = "0.0.1"
 
 plugins {
   `kotlin-dsl`
@@ -17,7 +14,12 @@ plugins {
   alias(libs.plugins.shadow)
   alias(libs.plugins.spotless)
   alias(libs.plugins.dokka)
+  alias(libs.plugins.git.version)
 }
+
+group = "dev.hygradle"
+
+version = "0.0.1"
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
@@ -36,16 +38,24 @@ testing.suites {
   val test by
       getting(JvmTestSuite::class) {
         useSpock()
-        dependencies { implementation(libs.ktor.client.mock) }
+        dependencies {
+          implementation(libs.ktor.client.mock)
+          implementation(libs.junit.jupiter)
+        }
       }
 
   val functionalTest by
       registering(JvmTestSuite::class) {
         useSpock()
-        dependencies { implementation(gradleTestKit()) }
+        dependencies {
+          implementation(gradleTestKit())
+          implementation(libs.wiremock)
+        }
       }
+}
 
-  val integrationTest by registering(JvmTestSuite::class) { useSpock() }
+tasks.withType<SpotlessTask>() {
+  notCompatibleWithConfigurationCache("https://github.com/diffplug/spotless/issues/2878")
 }
 
 dependencies {
@@ -62,10 +72,26 @@ dependencies {
 spotless {
   kotlin { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
   kotlinGradle { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
+  groovy { excludeJava() }
 }
+
+tasks.validatePlugins { enableStricterValidation = true }
 
 gradlePlugin {
   vcsUrl = "https://github.com/remi-gelinas/hygradle"
   website = "https://hygradle.dev"
-  plugins.register("dev.hygradle") { implementationClass = "dev.hygradle.internal.HygradlePlugin" }
+
+  testSourceSets.add(sourceSets["functionalTest"])
+
+  plugins {
+    register("dev.hygradle") { implementationClass = "dev.hygradle.internal.HygradlePlugin" }
+
+    register("dev.hygradle.settings") {
+      implementationClass = "dev.hygradle.internal.HygradleSettingsPlugin"
+    }
+
+    register("dev.hygradle.repositories") {
+      implementationClass = "dev.hygradle.internal.RepositoryPlugin"
+    }
+  }
 }

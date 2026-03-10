@@ -12,22 +12,44 @@ class ServicePlugin : Plugin<Project> {
             "hygradle-account",
             HytaleAccountService::class.java,
         ) {
-          this.parameters.tokenFile.set(
-              project.rootProject.layout.buildDirectory.dir("hygradle/auth").map {
-                it.file("auth.json")
-              }
-          )
+          parameters {
+            tokenFile.set(
+                project.rootProject.layout.buildDirectory.dir("hygradle/auth").map {
+                  it.file("auth.json")
+                }
+            )
+          }
         }
 
         gradle.sharedServices.registerIfAbsent(
             "hytale-account",
             HytaleAccount::class.java,
         ) {
-          this.parameters.tokenFile.set(
-              project.rootProject.layout.buildDirectory.dir("hygradle/auth").map {
-                it.file("auth.json")
-              }
-          )
+          parameters {
+            oauthBaseUrl.convention(
+                project.providers
+                    .gradleProperty(HytaleAccount.OAUTH_BASE_PROPERTY)
+                    .orElse(HytaleAccount.OAUTH_BASE)
+            )
+
+            accountBaseUrl.convention(
+                project.providers
+                    .gradleProperty(HytaleAccount.ACCOUNT_BASE_PROPERTY)
+                    .orElse(HytaleAccount.ACCOUNT_BASE)
+            )
+
+            sessionBaseUrl.convention(
+                project.providers
+                    .gradleProperty(HytaleAccount.SESSION_BASE_PROPERTY)
+                    .orElse(HytaleAccount.SESSION_BASE)
+            )
+
+            tokenFile.set(
+                project.rootProject.layout.buildDirectory.dir("hygradle/auth").map {
+                  it.file("auth.json")
+                }
+            )
+          }
         }
       }
 }
