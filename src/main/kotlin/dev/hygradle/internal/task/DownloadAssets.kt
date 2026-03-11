@@ -1,9 +1,16 @@
 package dev.hygradle.internal.task
 
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.HytaleAccountService
 import dev.hygradle.internal.service.hytale.HytaleAccount
-import java.net.URI
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -15,8 +22,6 @@ import org.gradle.api.tasks.UntrackedTask
 
 @UntrackedTask(because = "Content-hashing the asset bundle is very time-consuming.")
 abstract class DownloadAssets : DefaultTask() {
-  @get:ServiceReference abstract val account: Property<HytaleAccountService>
-
   @get:ServiceReference abstract val hytale: Property<HytaleAccount>
 
   @get:Input abstract val version: Property<String>
@@ -24,12 +29,6 @@ abstract class DownloadAssets : DefaultTask() {
   @get:Input abstract val patchline: Property<Patchline>
 
   @get:OutputDirectory abstract val assetBundleCacheDirectory: DirectoryProperty
-
-  init {
-    assetBundleCacheDirectory.convention(
-        project.layout.projectDirectory.dir(".gradle/caches/hygradle/bundles")
-    )
-  }
 
   @TaskAction
   fun downloadAssets() {
@@ -46,9 +45,13 @@ abstract class DownloadAssets : DefaultTask() {
 
     val bundleUrl = hytale.get().service.getAssetBundle(patchline, version)
 
-    // TODO: Use ktor client buffered streaming for this, through a worker??
-    URI(bundleUrl).toURL().openStream().buffered().use { inputStream ->
-      assetBundle.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
+    runBlocking {
+      HttpClient(CIO)
+          .prepareGet(bundleUrl) {
+            // TODO: Maybe make this configurable?
+            timeout { requestTimeoutMillis = 30.minutes.inWholeMilliseconds }
+          }
+          .execute { response -> response.bodyAsChannel().copyAndClose(assetBundle.writeChannel()) }
     }
   }
 }

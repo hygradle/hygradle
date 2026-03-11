@@ -15,7 +15,7 @@ import org.gradle.toolchains.foojay.FoojayToolchainsPlugin
 class ConventionPlugin : Plugin<Project> {
   override fun apply(project: Project): Unit =
       with(project) {
-        // TODO: Remove GradleInternal hack once users adopt dev.hygradle.settings
+        // TODO: Remove GradleInternal hack once people actually use the settings plugin
         if (!gradle.plugins.hasPlugin(FoojayToolchainsPlugin::class.java)) {
           (gradle as GradleInternal).settings.plugins.apply(FoojayToolchainsPlugin::class.java)
         }

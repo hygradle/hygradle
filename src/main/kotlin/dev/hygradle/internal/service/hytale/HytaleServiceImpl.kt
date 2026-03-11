@@ -1,10 +1,6 @@
 package dev.hygradle.internal.service.hytale
 
 import dev.hygradle.dsl.hytale.Patchline
-import dev.hygradle.internal.service.AssetBundleResponse
-import dev.hygradle.internal.service.DeviceCodeResponse
-import dev.hygradle.internal.service.GetProfileResponse
-import dev.hygradle.internal.service.TokenResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.*
@@ -21,17 +17,20 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.slf4j.LoggerFactory
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonIgnoreUnknownKeys
+import org.slf4j.Logger
 
 class HytaleServiceImpl(
     engine: HttpClientEngine,
     private val oauthBaseUrl: String,
     private val accountBaseUrl: String,
     private val sessionBaseUrl: String,
+    private val logger: Logger,
     tokenLoader: suspend () -> BearerTokens?,
 ) : HytaleService {
-  private val logger = LoggerFactory.getLogger(HytaleServiceImpl::class.java)
-
   val tokens = mutableListOf<BearerTokens>()
 
   val client =
@@ -96,7 +95,17 @@ class HytaleServiceImpl(
   suspend fun startDeviceFlow(): BearerTokens {
     val codeResponse = fetchDeviceCode()
 
-    println(codeResponse.verificationUriComplete)
+    logger.info(
+        """
+      Starting OAuth device code flow...
+      ===================================================================
+      Please open this URL in your browser to authenticate: ${codeResponse.verificationUriComplete}
+      
+      Alternatively, go to ${codeResponse.verificationUri} and enter the code '${codeResponse.userCode}'.
+      ===================================================================
+    """
+            .trimIndent()
+    )
 
     return pollDeviceToken(
             codeResponse.deviceCode,
@@ -195,7 +204,7 @@ class HytaleServiceImpl(
     getAssetBundleSuspend(patchline, version)
   }
 
-  suspend fun getAvailableProfilesSuspend(): GetProfileResponse =
+  suspend fun getAvailableProfilesSuspend(): List<Profile> =
       client
           .get {
             url {
@@ -203,17 +212,69 @@ class HytaleServiceImpl(
               appendPathSegments("my-account", "get-profiles")
             }
           }
-          .body()
+          .body<GetProfileResponse>()
+          .profiles
 
-  override fun getAvailableProfiles() {
-    runBlocking { getAvailableProfilesSuspend() }
-  }
+  override fun getAvailableProfiles(): List<Profile> = runBlocking { getAvailableProfilesSuspend() }
 
-  override fun createGameSession(uuid: String) {
-    TODO("Not yet implemented")
-  }
+  suspend fun createGameSessionSuspend(uuid: String) =
+      client
+          .post {
+            url {
+              withSessionBase()
+              appendPathSegments("game-session", "new")
+            }
+
+            contentType(ContentType.Application.Json)
+            setBody(CreateGameSessionRequest(uuid))
+          }
+          .body<CreateGameSessionResponse>()
+          .let { SessionTokens(it.sessionToken, it.identityToken) }
+
+  override fun createGameSession(uuid: String) = runBlocking { createGameSessionSuspend(uuid) }
 
   override fun terminateGameSession(token: String) {
     TODO("Not yet implemented")
   }
 }
+
+@Serializable data class SerializableBearerToken(val accessToken: String, val refreshToken: String)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonIgnoreUnknownKeys
+data class TokenResponse(
+    @SerialName("access_token") val accessToken: String,
+    @SerialName("refresh_token") val refreshToken: String,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonIgnoreUnknownKeys
+data class DeviceCodeResponse(
+    @SerialName("device_code") val deviceCode: String,
+    @SerialName("user_code") val userCode: String,
+    @SerialName("verification_uri") val verificationUri: String,
+    @SerialName("verification_uri_complete") val verificationUriComplete: String,
+    val interval: Int,
+)
+
+@Serializable data class AssetBundleResponse(val url: String)
+
+@Serializable data class CreateGameSessionRequest(val uuid: String)
+
+@Serializable
+data class CreateGameSessionResponse(
+    val sessionToken: String,
+    val identityToken: String,
+    val expiresAt: String,
+)
+
+@Serializable data class GetProfileResponse(val owner: String, val profiles: List<Profile>)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonIgnoreUnknownKeys
+data class Profile(val uuid: String, val username: String)
+
+@Serializable data class SessionTokens(val sessionToken: String, val identityToken: String)

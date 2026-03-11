@@ -20,9 +20,12 @@ class RepositoryPlugin : Plugin<PluginAware> {
         target.gradle.plugins.apply(RepositoryPlugin::class.java)
       }
       is Project -> {
-        if (!target.gradle.plugins.hasPlugin(RepositoryPlugin::class.java)) {
-          // TODO: Replace afterEvaluate if/when repositories get lazy equivalents
-          target.afterEvaluate { repositories.applyHytaleRepositories() }
+        val settingsApplied = target.gradle.plugins.hasPlugin(RepositoryPlugin::class.java)
+        // TODO: Replace afterEvaluate if/when repositories get lazy equivalents
+        target.afterEvaluate {
+          if (!settingsApplied || repositories.isNotEmpty()) {
+            repositories.applyHytaleRepositories()
+          }
         }
       }
       is Gradle -> {}

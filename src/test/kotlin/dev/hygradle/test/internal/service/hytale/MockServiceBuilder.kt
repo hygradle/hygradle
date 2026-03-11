@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import org.slf4j.helpers.NOPLogger
 
 class MockHytaleService(
     val service: HytaleServiceImpl,
@@ -69,6 +70,7 @@ class MockServiceBuilder {
             oauthBaseUrl = "https://oauth.test.local",
             accountBaseUrl = "https://account.test.local",
             sessionBaseUrl = "https://session.test.local",
+            logger = NOPLogger.NOP_LOGGER,
             tokenLoader = tokenLoader,
         )
 

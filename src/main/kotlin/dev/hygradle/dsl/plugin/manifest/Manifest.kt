@@ -28,6 +28,9 @@ interface Manifest {
   /** The fully qualified class name for the plugin entrypoint. */
   @get:Input val mainClass: Property<String>
 
+  /** Whether this plugin includes an asset pack. */
+  @get:Input val includesAssetPack: Property<Boolean>
+
   /** The credited authors of the plugin. */
   @get:Input @get:Optional val authors: DomainObjectSet<Author>
 

@@ -29,6 +29,7 @@ kotlin {
     apiVersion = KotlinVersion.KOTLIN_2_3
     languageVersion = apiVersion
     jvmTarget = JvmTarget.fromTarget("25")
+    freeCompilerArgs.add("-Xexplicit-backing-fields")
   }
 }
 

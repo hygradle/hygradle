@@ -19,6 +19,9 @@ internal constructor(pluginName: String, private val objects: ObjectFactory, pro
     group.convention(project.provider { project.group.toString() })
     version.convention(project.provider { project.version.toString() })
     serverVersion.convention(project.hygradle().hytale.version)
+
+    // TODO: See if I can make this dependant on the sourceset including resources (heuristics?)
+    includesAssetPack.convention(true)
   }
 
   override fun author(configure: Action<in Author>) {

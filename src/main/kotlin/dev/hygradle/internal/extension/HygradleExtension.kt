@@ -42,4 +42,4 @@ abstract class HygradleExtension @Inject constructor(objects: ObjectFactory) : H
   }
 }
 
-internal fun Project.hygradle() = extensions.getByType(HygradleExtension::class.java)!!
+internal fun Project.hygradle() = extensions.getByType(HygradleExtension::class.java)

@@ -2,6 +2,7 @@ package dev.hygradle.test.internal.service.hytale
 
 import dev.hygradle.dsl.hytale.Patchline
 import io.ktor.client.plugins.auth.providers.*
+import io.ktor.http.content.*
 import java.util.concurrent.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -146,5 +147,50 @@ class HytaleServiceImplTest {
         )
       }
     }
+  }
+
+  @Test
+  fun `createGameSession posts to correct URL with JSON body and returns session tokens`() {
+    val mock =
+        MockServiceBuilder()
+            .enqueue(
+                """{"sessionToken":"sess-tok-1","identityToken":"id-tok-1","expiresAt":"2026-01-01T00:00:00Z"}"""
+            )
+            .build()
+
+    val result = mock.service.createGameSession("test-uuid")
+
+    assertEquals(1, mock.requests.size)
+    assertEquals("session.test.local", mock.requests[0].url.host)
+    assertEquals("/game-session/new", mock.requests[0].url.encodedPath)
+    assertEquals(
+        "application/json",
+        mock.requests[0].body.contentType?.toString()?.substringBefore(";"),
+    )
+    assertEquals("""{"uuid":"test-uuid"}""", (mock.requests[0].body as TextContent).text)
+    assertEquals("sess-tok-1", result.sessionToken)
+    assertEquals("id-tok-1", result.identityToken)
+  }
+
+  @Test
+  fun `createGameSession authenticates via 401 challenge and retries with bearer token`() {
+    val mock =
+        MockServiceBuilder()
+            .withTokens("loaded-access", "loaded-refresh")
+            .enqueue("{}", 401)
+            .enqueue(
+                """{"access_token":"refreshed-access","refresh_token":"refreshed-refresh"}"""
+            )
+            .enqueue(
+                """{"sessionToken":"sess-tok-2","identityToken":"id-tok-2","expiresAt":"2026-01-01T00:00:00Z"}"""
+            )
+            .build()
+
+    val result = mock.service.createGameSession("test-uuid")
+
+    assertEquals("sess-tok-2", result.sessionToken)
+    assertEquals("id-tok-2", result.identityToken)
+    assertEquals(3, mock.requests.size)
+    assertEquals("Bearer refreshed-access", mock.requests[2].headers["Authorization"])
   }
 }

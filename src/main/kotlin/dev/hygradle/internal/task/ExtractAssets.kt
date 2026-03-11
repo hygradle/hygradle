@@ -25,12 +25,6 @@ abstract class ExtractAssets : DefaultTask() {
 
   @get:OutputDirectory abstract val assetCacheDirectory: DirectoryProperty
 
-  init {
-    assetCacheDirectory.convention(
-        project.layout.projectDirectory.dir(".gradle/caches/hygradle/assets")
-    )
-  }
-
   @TaskAction
   fun extract() {
     val assetBundle = assetBundle.singleFile
@@ -39,6 +33,7 @@ abstract class ExtractAssets : DefaultTask() {
 
     cacheDir.asFileTree.visit { if (file != assets) file.delete() }
 
+    // TODO: Finer caching that doesn't require content hashing 4 gigs?
     if (assets.exists()) return
 
     fs.copy {

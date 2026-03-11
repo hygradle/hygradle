@@ -16,22 +16,29 @@ import org.gradle.kotlin.dsl.register
 
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
+    val hygradle = project.hygradle()
+    val sourceSets = project.sourceSets()
+    val objects = project.objects
+    val providers = project.providers
+    val pluginContainer = hygradle.plugins
+    val hygradleCacheDir = project.gradle.gradleUserHomeDir.resolve("caches/hygradle")
+
     val downloadAssetBundle =
         project.tasks.register<DownloadAssets>("downloadAssets") {
           group = "hygradle/internal"
-          version.set(project.hygradle().hytale.version)
-          patchline.set(project.hygradle().hytale.patchline)
+          version.set(hygradle.hytale.version)
+          patchline.set(hygradle.hytale.patchline)
+          assetBundleCacheDirectory.fileValue(hygradleCacheDir.resolve("bundles"))
         }
 
     val extractAssets =
         project.tasks.register<ExtractAssets>("extractAssets") {
           group = "hygradle/internal"
           assetBundle.from(downloadAssetBundle.map { it.assetBundleCacheDirectory.asFileTree })
+          assetCacheDirectory.fileValue(hygradleCacheDir.resolve("assets"))
         }
 
-    val plugins = project.hygradle().plugins
-
-    plugins.all {
+    pluginContainer.all {
       val plugin = this
 
       if (plugin is LatePlugin) {
@@ -43,25 +50,29 @@ class TaskPlugin : GradlePlugin<Project> {
                 }
                 .also { plugin.generateManifest.set(it) }
 
+        sourceSets.named(plugin.sourceSetName.get()).configure {
+          resources.srcDir(generateManifest.flatMap { t -> t.manifestDirectory })
+        }
+
         project.tasks
             .register<AssembleAssets>("assemble${name.capitalize()}Assets") {
               group = "hygradle/plugins/${plugin.name}"
               pluginName.set(plugin.name)
               pluginManifest.set(generateManifest.flatMap { it.manifest })
               pluginResources.from(
-                  plugin.sourceSetName
-                      .flatMap { project.sourceSets().named(it) }
-                      .map { it.resources }
+                  plugin.sourceSetName.flatMap { sourceSets.named(it) }.map { it.resources }
               )
             }
             .also { plugin.assembleAssets.set(it) }
       }
     }
 
-    val runs = project.hygradle().runs
+    val runs = hygradle.runs
 
     runs.all {
       val run = this
+
+      run.plugins.convention(providers.provider { pluginContainer.names })
 
       val prepareRunDirectory =
           project.tasks.register<PrepareRunDirectory>("prepare${name.capitalize()}RunDirectory") {
@@ -69,32 +80,41 @@ class TaskPlugin : GradlePlugin<Project> {
             runName.set(run.name)
           }
 
-      val startServer =
-          project.tasks.register<RunHytaleServer>("start${name.capitalize()}Server") {
-            group = "hygradle/runs/${run.name}"
+      project.tasks.register<RunHytaleServer>("start${name.capitalize()}Server") {
+        group = "hygradle/runs/${run.name}"
 
-            runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
-            classpathProvider.from(project.hygradle().hytale.hytaleClasspath)
+        runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
+        classpathProvider.from(hygradle.hytale.hytaleClasspath)
 
-            assets.from(extractAssets.map { it.assetCacheDirectory.asFileTree })
-            hotswapAgent.from(project.hygradle().hotswapAgent.hotswapAgentClasspath)
-            harness.from(project.hygradle().harness.harnessClasspath)
+        assets.from(extractAssets.map { it.assetCacheDirectory.asFileTree })
+        hotswapAgent.from(hygradle.hotswapAgent.hotswapAgentClasspath)
+        harness.from(hygradle.harness.harnessClasspath)
 
-            plugins
-                .filter { true } // TODO: Add a prop to specify plugins
-                .forEach {
-                  classpathProvider.from(
-                      it.sourceSetName
-                          .flatMap { name -> project.sourceSets().named(name) }
-                          .map { sourceSet -> sourceSet.output.classesDirs }
+        classpathProvider.from(
+            run.plugins.map { names ->
+              objects.fileCollection().apply {
+                for (name in names) {
+                  require(name in pluginContainer.names) {
+                    "Run '${run.name}' references unknown plugin '$name'"
+                  }
+
+                  val plugin = pluginContainer.named(name).get()
+
+                  from(
+                      plugin.sourceSetName
+                          .flatMap { sourceSets.named(it) }
+                          .map { it.output.classesDirs }
                   )
 
-                  classpathProvider.from(it.runtimeClasspathConfiguration)
+                  from(plugin.runtimeClasspathConfiguration)
 
-                  if (it is LatePlugin)
-                      classpathProvider.from(it.assembleAssets.flatMap { t -> t.assetDirectory })
+                  if (plugin is LatePlugin)
+                      from(plugin.assembleAssets.flatMap { it.assetDirectory })
                 }
-          }
+              }
+            }
+        )
+      }
     }
   }
 }

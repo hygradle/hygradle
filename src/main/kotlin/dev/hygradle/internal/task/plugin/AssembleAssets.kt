@@ -1,6 +1,7 @@
 package dev.hygradle.internal.task.plugin
 
 import java.io.File
+import javax.inject.Inject
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createSymbolicLinkPointingTo
 import kotlin.io.path.deleteRecursively
@@ -9,6 +10,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileVisitDetails
 import org.gradle.api.file.FileVisitor
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
@@ -22,6 +24,8 @@ import org.gradle.api.tasks.TaskAction
 
 @CacheableTask
 abstract class AssembleAssets : DefaultTask() {
+  @get:Inject abstract val layout: ProjectLayout
+
   @get:Input abstract val pluginName: Property<String>
 
   @get:InputFiles
@@ -36,7 +40,7 @@ abstract class AssembleAssets : DefaultTask() {
 
   init {
     assetDirectory.convention(
-        project.layout.buildDirectory.dir("hygradle/plugins").zip(pluginName) { dir, name ->
+        layout.buildDirectory.dir("hygradle/plugins").zip(pluginName) { dir, name ->
           dir.dir("$name/assets")
         }
     )

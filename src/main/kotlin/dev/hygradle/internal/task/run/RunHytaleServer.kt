@@ -1,6 +1,6 @@
 package dev.hygradle.internal.task.run
 
-import dev.hygradle.internal.service.HytaleAccountService
+import dev.hygradle.internal.service.hytale.HytaleAccount
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -16,7 +16,7 @@ import org.gradle.work.DisableCachingByDefault
 
 @DisableCachingByDefault
 abstract class RunHytaleServer : JavaExec() {
-  @get:ServiceReference abstract val account: Property<HytaleAccountService>
+  @get:ServiceReference abstract val hytale: Property<HytaleAccount>
 
   @get:Classpath abstract val classpathProvider: ConfigurableFileCollection
 
@@ -38,10 +38,13 @@ abstract class RunHytaleServer : JavaExec() {
 
   @TaskAction
   override fun exec() {
-    val profiles = account.get().getAvailableProfiles()
+    val profiles = hytale.get().service.getAvailableProfiles()
+    val firstProfile = profiles.first()
+
+    logger.lifecycle("Creating session for user '${firstProfile.username}'...")
 
     // TODO: Allow the user to pass their UUID as a config option
-    val sessionTokens = account.get().createGameSession(profiles.profiles.first().uuid)
+    val sessionTokens = hytale.get().service.createGameSession(profiles.first().uuid)
 
     val runDir = runDirectory.get().asFile
 
@@ -57,7 +60,9 @@ abstract class RunHytaleServer : JavaExec() {
         "-XX:HotswapAgent=external",
         "-javaagent:${hotswapAgent.singleFile}",
     )
+
     standardInput = System.`in`
+
     args =
         listOf(
             "--assets",
@@ -67,11 +72,13 @@ abstract class RunHytaleServer : JavaExec() {
             "--early-plugins",
             harness.singleFile.parentFile.toString(),
         )
+
     classpath(classpathProvider, harness)
 
     super.exec()
 
-    // TODO: Maybe this needs to be in a task finalizer?
-    account.get().terminateSession(sessionTokens.sessionToken)
+    /*
+    TODO: Do we need to revoke the session token here? The server revokes sessions on shutdown, but that assumes it shuts down gracefully. Maybe this needs to be in a task finalizer?
+    */
   }
 }
