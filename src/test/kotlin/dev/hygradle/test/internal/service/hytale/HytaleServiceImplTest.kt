@@ -178,9 +178,7 @@ class HytaleServiceImplTest {
         MockServiceBuilder()
             .withTokens("loaded-access", "loaded-refresh")
             .enqueue("{}", 401)
-            .enqueue(
-                """{"access_token":"refreshed-access","refresh_token":"refreshed-refresh"}"""
-            )
+            .enqueue("""{"access_token":"refreshed-access","refresh_token":"refreshed-refresh"}""")
             .enqueue(
                 """{"sessionToken":"sess-tok-2","identityToken":"id-tok-2","expiresAt":"2026-01-01T00:00:00Z"}"""
             )

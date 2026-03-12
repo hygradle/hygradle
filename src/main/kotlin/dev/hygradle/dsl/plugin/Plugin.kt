@@ -2,9 +2,6 @@ package dev.hygradle.dsl.plugin
 
 import org.gradle.api.Action
 import org.gradle.api.Named
-import org.gradle.api.NamedDomainObjectProvider
-import org.gradle.api.artifacts.DependencyScopeConfiguration
-import org.gradle.api.artifacts.ResolvableConfiguration
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
@@ -17,18 +14,6 @@ interface Plugin : Named {
   fun sourceSet(sourceSet: SourceSet)
 
   fun sourceSet(sourceSet: Provider<SourceSet>)
-
-  /** The compile-only configuration for the plugin. */
-  val compileOnlyConfiguration: NamedDomainObjectProvider<DependencyScopeConfiguration>
-
-  /** The compile-time classpath for the plugin. */
-  val compileClasspathConfiguration: NamedDomainObjectProvider<ResolvableConfiguration>
-
-  /** The runtime-only configuration for the plugin. */
-  val runtimeOnlyConfiguration: NamedDomainObjectProvider<DependencyScopeConfiguration>
-
-  /** The runtime-only classpath for the plugin. */
-  val runtimeClasspathConfiguration: NamedDomainObjectProvider<ResolvableConfiguration>
 
   /** The custom [DependencyHandler] for this plugin. */
   val dependencies: DependencyHandler

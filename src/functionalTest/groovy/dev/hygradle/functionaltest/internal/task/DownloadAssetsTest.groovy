@@ -46,8 +46,22 @@ class DownloadAssetsTest extends FunctionalSpec {
 
     private void setupProject(GradleDsl dsl) {
         settingsFile(dsl) << [
-            (GradleDsl.GROOVY): "rootProject.name = 'test'",
-            (GradleDsl.KOTLIN): 'rootProject.name = "test"'
+            (GradleDsl.GROOVY): """\
+                plugins { id 'dev.hygradle.settings' }
+                hygradle {
+                    hytale {
+                        version = '1.0.0'
+                    }
+                }
+            """.stripIndent(),
+            (GradleDsl.KOTLIN): """\
+                plugins { id("dev.hygradle.settings") }
+                hygradle {
+                    hytale {
+                        version = "1.0.0"
+                    }
+                }
+            """.stripIndent()
         ][dsl]
 
         gradleProperties << """\
@@ -59,19 +73,9 @@ class DownloadAssetsTest extends FunctionalSpec {
         buildFile(dsl) << [
             (GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle' }
-                hygradle {
-                    hytale {
-                        version = '1.0.0'
-                    }
-                }
             """.stripIndent(),
             (GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle") }
-                hygradle {
-                    hytale {
-                        version = "1.0.0"
-                    }
-                }
             """.stripIndent()
         ][dsl]
     }

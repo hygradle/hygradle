@@ -18,7 +18,7 @@ wiremock = { group = "org.wiremock", name = "wiremock", version = "3.13.0" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-plugin-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }
+plugin-publish = { id = "com.gradle.plugin-publish", version = "2.1.0" }
 spotless = { id = "com.diffplug.spotless", version = "8.3.0" }
 shadow = { id = "com.gradleup.shadow", version = "9.3.0" }
 dokka = { id = "org.jetbrains.dokka", version = "2.1.0" }

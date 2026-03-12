@@ -2,6 +2,7 @@
 
 import com.diffplug.gradle.spotless.SpotlessTask
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
@@ -85,14 +86,22 @@ gradlePlugin {
   testSourceSets.add(sourceSets["functionalTest"])
 
   plugins {
-    register("dev.hygradle") { implementationClass = "dev.hygradle.internal.HygradlePlugin" }
+    register("dev.hygradle") {
+      displayName = "Hygradle"
+      description = "A mod development environment for Hytale."
+      tags = listOf("hytale, gradle")
+      implementationClass = "dev.hygradle.internal.HygradlePlugin"
 
-    register("dev.hygradle.settings") {
-      implementationClass = "dev.hygradle.internal.HygradleSettingsPlugin"
+      compatibility { features { configurationCache = true } }
     }
 
-    register("dev.hygradle.repositories") {
-      implementationClass = "dev.hygradle.internal.RepositoryPlugin"
+    register("dev.hygradle.settings") {
+      displayName = "Hygradle (Settings)"
+      description = "A mod development environment for Hytale."
+      tags = listOf("hytale, gradle")
+      implementationClass = "dev.hygradle.internal.HygradleSettingsPlugin"
+
+      compatibility { features { configurationCache = true } }
     }
   }
 }

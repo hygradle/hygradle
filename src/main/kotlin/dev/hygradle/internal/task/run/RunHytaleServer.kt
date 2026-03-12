@@ -56,6 +56,7 @@ abstract class RunHytaleServer : JavaExec() {
     environment("HYTALE_SERVER_IDENTITY_TOKEN", sessionTokens.identityToken)
 
     jvmArgs(
+        "--enable-native-access=ALL-UNNAMED",
         "-XX:+AllowEnhancedClassRedefinition",
         "-XX:HotswapAgent=external",
         "-javaagent:${hotswapAgent.singleFile}",

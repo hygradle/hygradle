@@ -4,13 +4,17 @@ package dev.hygradle.internal.plugin
 
 import dev.hygradle.dsl.plugin.DependencyHandler
 import dev.hygradle.dsl.plugin.Plugin
+import dev.hygradle.internal.HygradleAttributes
+import dev.hygradle.internal.HygradleVariant
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ConsumableConfiguration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 
 abstract class PluginImpl
@@ -18,30 +22,55 @@ abstract class PluginImpl
 internal constructor(private val name: String, private val project: Project) : Plugin {
   override fun getName(): String = name
 
-  override val compileOnlyConfiguration =
+  val compileOnlyConfiguration =
       project.configurations.dependencyScope("${name}CompileOnly") {
         description = "Compile-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  override val compileClasspathConfiguration =
+  val compileClasspathConfiguration =
       project.configurations.resolvable("${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
+        attributes { attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE) }
       }
 
-  override val runtimeOnlyConfiguration =
+  val runtimeOnlyConfiguration =
       project.configurations.dependencyScope("${name}RuntimeOnly") {
         description = "Runtime-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  override val runtimeClasspathConfiguration =
+  val runtimeClasspathConfiguration =
       project.configurations.resolvable("${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(runtimeOnlyConfiguration)
+        attributes { attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME) }
+      }
+
+  val compileElementsConfiguration =
+      project.configurations.consumable("${name}CompileElements") {
+        description = "Compile elements (classes directories) for plugin '${this@PluginImpl.name}'."
+        extendsFrom(compileOnlyConfiguration)
+        attributes {
+          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
+          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+        }
+      }
+
+  val runtimeElementsConfiguration =
+      project.configurations.consumable("${name}RuntimeElements") {
+        description = "Runtime elements (classes directories) for plugin '${this@PluginImpl.name}'."
+        extendsFrom(runtimeOnlyConfiguration)
+        attributes {
+          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
+          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+        }
       }
 
   override val dependencies: DependencyHandler =
-      project.objects.newInstance<DependencyHandlerImpl>(this)
+      project.objects.newInstance<DependencyHandlerImpl>(
+          runtimeOnlyConfiguration,
+          compileOnlyConfiguration,
+      )
 
   override fun dependencies(configure: Action<in DependencyHandler>) =
       configure.execute(dependencies)
@@ -69,6 +98,20 @@ internal constructor(private val name: String, private val project: Project) : P
               .flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
       )
     }
+
+    val wireClassesDirs:
+        org.gradle.api.NamedDomainObjectProvider<ConsumableConfiguration>.() -> Unit =
+        {
+          configure {
+            val sourceSet = project.sourceSets().getByName(sourceSetName.get())
+            sourceSet.output.classesDirs.files.forEach { classesDir ->
+              outgoing.artifact(classesDir) { builtBy(sourceSet.output) }
+            }
+          }
+        }
+
+    compileElementsConfiguration.wireClassesDirs()
+    runtimeElementsConfiguration.wireClassesDirs()
   }
 }
 

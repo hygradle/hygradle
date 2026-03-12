@@ -1,7 +1,12 @@
+@file:Suppress("UnstableApiUsage")
+
 package dev.hygradle.internal.subsystem
 
 import dev.hygradle.dsl.plugin.LatePlugin
+import dev.hygradle.internal.HygradleAttributes
+import dev.hygradle.internal.HygradleVariant
 import dev.hygradle.internal.extension.hygradle
+import dev.hygradle.internal.extension.hygradleConfigurations
 import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.internal.task.DownloadAssets
 import dev.hygradle.internal.task.ExtractAssets
@@ -12,11 +17,16 @@ import dev.hygradle.internal.task.run.RunHytaleServer
 import java.util.Locale.getDefault
 import org.gradle.api.Plugin as GradlePlugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE
 import org.gradle.kotlin.dsl.register
 
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
     val hygradle = project.hygradle()
+    val settings = project.hygradleSettings()
+    val configurations = project.hygradleConfigurations()
     val sourceSets = project.sourceSets()
     val objects = project.objects
     val providers = project.providers
@@ -26,8 +36,8 @@ class TaskPlugin : GradlePlugin<Project> {
     val downloadAssetBundle =
         project.tasks.register<DownloadAssets>("downloadAssets") {
           group = "hygradle/internal"
-          version.set(hygradle.hytale.version)
-          patchline.set(hygradle.hytale.patchline)
+          version.set(settings.hytale.version)
+          patchline.set(settings.hytale.patchline)
           assetBundleCacheDirectory.fileValue(hygradleCacheDir.resolve("bundles"))
         }
 
@@ -40,15 +50,60 @@ class TaskPlugin : GradlePlugin<Project> {
 
     pluginContainer.all {
       val plugin = this
+      val configName = name
 
       if (plugin is LatePlugin) {
+        @Suppress("UNCHECKED_CAST")
+        val runtimeOnly = project.configurations.named("${configName}RuntimeOnly")
+
+        val depManifestsConfig =
+            project.configurations.resolvable("_${configName}DependencyManifests") {
+              extendsFrom(runtimeOnly)
+
+              attributes {
+                attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
+                attribute(ARTIFACT_TYPE_ATTRIBUTE, HygradleAttributes.PLUGIN_MANIFEST_ARTIFACT_TYPE)
+              }
+            }
+
         val generateManifest =
             project.tasks
-                .register<GenerateManifest>("generate${name.capitalize()}Manifest") {
-                  group = "hygradle/plugins/${plugin.name}"
+                .register<GenerateManifest>("generate${configName.capitalize()}Manifest") {
+                  group = "hygradle/plugins/$configName"
                   spec.set(plugin.manifest)
+
+                  dependencyManifests.from(
+                      depManifestsConfig.map { config ->
+                        val directPaths =
+                            project.configurations
+                                .getByName("${configName}RuntimeOnly")
+                                .dependencies
+                                .filterIsInstance<ProjectDependency>()
+                                .mapTo(mutableSetOf()) { it.path }
+
+                        config.incoming
+                            .artifactView {
+                              componentFilter { id ->
+                                id is ProjectComponentIdentifier && id.projectPath in directPaths
+                              }
+                              lenient(true)
+                            }
+                            .files
+                      }
+                  )
                 }
                 .also { plugin.generateManifest.set(it) }
+
+        // Publish manifest as a separate consumable configuration for cross-project consumers
+        project.configurations.consumable("${configName}ManifestElements") {
+          attributes {
+            attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
+            attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, configName)
+            attribute(ARTIFACT_TYPE_ATTRIBUTE, HygradleAttributes.PLUGIN_MANIFEST_ARTIFACT_TYPE)
+          }
+
+          outgoing.artifact(generateManifest.flatMap { it.manifest }) { builtBy(generateManifest) }
+        }
 
         sourceSets.named(plugin.sourceSetName.get()).configure {
           resources.srcDir(generateManifest.flatMap { t -> t.manifestDirectory })
@@ -63,7 +118,16 @@ class TaskPlugin : GradlePlugin<Project> {
                   plugin.sourceSetName.flatMap { sourceSets.named(it) }.map { it.resources }
               )
             }
-            .also { plugin.assembleAssets.set(it) }
+            .also { assembleAssets ->
+              plugin.assembleAssets.set(assembleAssets)
+
+              // Publish asset directory for cross-project consumers
+              project.configurations.named("${name}RuntimeElements").configure {
+                outgoing.artifact(assembleAssets.flatMap { it.assetDirectory }) {
+                  builtBy(assembleAssets)
+                }
+              }
+            }
       }
     }
 
@@ -84,11 +148,11 @@ class TaskPlugin : GradlePlugin<Project> {
         group = "hygradle/runs/${run.name}"
 
         runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
-        classpathProvider.from(hygradle.hytale.hytaleClasspath)
+        classpathProvider.from(configurations.hytaleClasspath)
 
         assets.from(extractAssets.map { it.assetCacheDirectory.asFileTree })
-        hotswapAgent.from(hygradle.hotswapAgent.hotswapAgentClasspath)
-        harness.from(hygradle.harness.harnessClasspath)
+        hotswapAgent.from(configurations.hotswapAgentClasspath)
+        harness.from(configurations.harnessClasspath)
 
         classpathProvider.from(
             run.plugins.map { names ->
@@ -106,7 +170,7 @@ class TaskPlugin : GradlePlugin<Project> {
                           .map { it.output.classesDirs }
                   )
 
-                  from(plugin.runtimeClasspathConfiguration)
+                  from(project.configurations.named("${name}RuntimeClasspath"))
 
                   if (plugin is LatePlugin)
                       from(plugin.assembleAssets.flatMap { it.assetDirectory })

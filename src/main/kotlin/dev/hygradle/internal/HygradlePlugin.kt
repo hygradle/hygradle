@@ -6,6 +6,7 @@ import dev.hygradle.internal.extension.HygradleExtension
 import dev.hygradle.internal.subsystem.ConventionPlugin
 import dev.hygradle.internal.subsystem.DependencyPlugin
 import dev.hygradle.internal.subsystem.ServicePlugin
+import dev.hygradle.internal.subsystem.SettingsConventionPlugin
 import dev.hygradle.internal.subsystem.TaskPlugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -24,9 +25,14 @@ class HygradlePlugin : Plugin<PluginAware> {
       with(project) {
         extensions.create<HygradleExtension>("hygradle")
 
+        dependencies.attributesSchema {
+          attribute(HygradleAttributes.VARIANT_ATTRIBUTE)
+          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE)
+        }
+
         with(plugins) {
+          apply(SettingsConventionPlugin::class.java)
           apply(ConventionPlugin::class.java)
-          apply(RepositoryPlugin::class.java)
           apply(DependencyPlugin::class.java)
           apply(TaskPlugin::class.java)
           apply(ServicePlugin::class.java)

@@ -3,7 +3,7 @@ package dev.hygradle.internal.plugin.manifest
 import dev.hygradle.dsl.plugin.manifest.Author
 import dev.hygradle.dsl.plugin.manifest.Dependency
 import dev.hygradle.dsl.plugin.manifest.Manifest
-import dev.hygradle.internal.extension.hygradle
+import dev.hygradle.internal.subsystem.hygradleSettings
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -18,7 +18,7 @@ internal constructor(pluginName: String, private val objects: ObjectFactory, pro
     name.convention(pluginName)
     group.convention(project.provider { project.group.toString() })
     version.convention(project.provider { project.version.toString() })
-    serverVersion.convention(project.hygradle().hytale.version)
+    serverVersion.convention(project.hygradleSettings().hytale.version)
 
     // TODO: See if I can make this dependant on the sourceset including resources (heuristics?)
     includesAssetPack.convention(true)

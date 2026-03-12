@@ -5,21 +5,29 @@ import dev.hygradle.functionaltest.GradleDsl
 
 class RepositoryPluginTest extends FunctionalSpec {
 
-    def "settings plugin configures repositories with repositoriesMode #mode (#dsl)"() {
+    def "hytale() repository extension adds patchline repositories (#dsl)"() {
         given:
         settingsFile(dsl) << [
             (GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.repositories' }
+                import static dev.hygradle.dsl.settings.RepositoriesKt.hytale
+                plugins { id 'dev.hygradle.settings' }
                 dependencyResolutionManagement {
                     repositoriesMode.set(RepositoriesMode.${mode})
-                    repositories { mavenCentral() }
+                    repositories {
+                        hytale(delegate)
+                        mavenCentral()
+                    }
                 }
             """,
             (GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.repositories") }
+                import dev.hygradle.dsl.settings.hytale
+                plugins { id("dev.hygradle.settings") }
                 dependencyResolutionManagement {
                     repositoriesMode.set(RepositoriesMode.${mode})
-                    repositories { mavenCentral() }
+                    repositories {
+                        hytale()
+                        mavenCentral()
+                    }
                 }
             """
         ][dsl]
@@ -35,7 +43,7 @@ class RepositoryPluginTest extends FunctionalSpec {
         [mode, dsl] << [["PREFER_PROJECT", "PREFER_SETTINGS", "FAIL_ON_PROJECT_REPOS"], GradleDsl.values().toList()].combinations()
     }
 
-    def "project plugin adds repositories when settings plugin is not applied (#dsl)"() {
+    def "project plugin fails with clear error if settings plugin not applied (#dsl)"() {
         given:
         settingsFile(dsl) << [
             (GradleDsl.GROOVY): "rootProject.name = 'test'",
@@ -44,95 +52,6 @@ class RepositoryPluginTest extends FunctionalSpec {
         buildFile(dsl) << [
             (GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle' }
-                tasks.register('printRepos') {
-                    doLast { repositories.each { println "REPO: \${it.name}" } }
-                }
-            """,
-            (GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-                tasks.register("printRepos") {
-                    doLast { project.repositories.forEach { println("REPO: \${it.name}") } }
-                }
-            """
-        ][dsl]
-
-        when:
-        def result = runner("printRepos").build()
-
-        then:
-        result.output.contains("REPO: hytale-release")
-        result.output.contains("REPO: hytale-prerelease")
-
-        where:
-        dsl << GradleDsl.values()
-    }
-
-    def "project plugin adds repositories when consumer defines project-level repositories alongside settings plugin (#dsl)"() {
-        given:
-        settingsFile(dsl) << [
-            (GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.repositories' }
-                dependencyResolutionManagement {
-                    repositories { mavenCentral() }
-                }
-            """,
-            (GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.repositories") }
-                dependencyResolutionManagement {
-                    repositories { mavenCentral() }
-                }
-            """
-        ][dsl]
-        buildFile(dsl) << [
-            (GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
-                repositories { mavenCentral() }
-                tasks.register('printRepos') {
-                    doLast { repositories.each { println "REPO: \${it.name}" } }
-                }
-            """,
-            (GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-                repositories { mavenCentral() }
-                tasks.register("printRepos") {
-                    doLast { project.repositories.forEach { println("REPO: \${it.name}") } }
-                }
-            """
-        ][dsl]
-
-        when:
-        def result = runner("printRepos").build()
-
-        then:
-        result.output.contains("REPO: MavenRepo")
-        result.output.contains("REPO: hytale-release")
-        result.output.contains("REPO: hytale-prerelease")
-
-        where:
-        dsl << GradleDsl.values()
-    }
-
-    def "project plugin does not add project-level repositories when settings plugin was applied (#dsl)"() {
-        given:
-        settingsFile(dsl) << [
-            (GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.repositories' }
-                dependencyResolutionManagement {
-                    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-                    repositories { mavenCentral() }
-                }
-            """,
-            (GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.repositories") }
-                dependencyResolutionManagement {
-                    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-                    repositories { mavenCentral() }
-                }
-            """
-        ][dsl]
-        buildFile(dsl) << [
-            (GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
             """,
             (GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle") }
@@ -140,10 +59,10 @@ class RepositoryPluginTest extends FunctionalSpec {
         ][dsl]
 
         when:
-        def result = runner("help").build()
+        def result = runner("help").buildAndFail()
 
         then:
-        result.output.contains("BUILD SUCCESSFUL")
+        result.output.contains("'dev.hygradle.settings' plugin must be applied in settings.gradle.kts")
 
         where:
         dsl << GradleDsl.values()
