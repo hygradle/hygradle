@@ -10,6 +10,9 @@ import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConsumableConfiguration
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
@@ -31,7 +34,15 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.resolvable("${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
-        attributes { attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE) }
+        attributes {
+          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
+          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
+          attribute(
+              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+              project.objects.named(LibraryElements.CLASSES),
+          )
+          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
+        }
       }
 
   val runtimeOnlyConfiguration =
@@ -43,7 +54,15 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.resolvable("${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(runtimeOnlyConfiguration)
-        attributes { attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME) }
+        attributes {
+          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
+          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
+          attribute(
+              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+              project.objects.named(LibraryElements.CLASSES),
+          )
+          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
+        }
       }
 
   val compileElementsConfiguration =
@@ -53,6 +72,12 @@ internal constructor(private val name: String, private val project: Project) : P
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
+          attribute(
+              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+              project.objects.named(LibraryElements.CLASSES),
+          )
+          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
         }
       }
 
@@ -63,6 +88,12 @@ internal constructor(private val name: String, private val project: Project) : P
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
+          attribute(
+              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+              project.objects.named(LibraryElements.CLASSES),
+          )
+          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
         }
       }
 

@@ -6,10 +6,14 @@ import dev.hygradle.functionaltest.GradleDsl
 import spock.lang.Shared
 import spock.lang.TempDir
 
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+
+import javax.tools.ToolProvider
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
@@ -149,7 +153,26 @@ class RunHytaleServerTest extends FunctionalSpec {
         where:
         dsl << GradleDsl.values()
     }
-    
+
+    def "startTestServer with decompile completes auth handshake after generateSources (#dsl)"() {
+        given:
+        setupProjectWithDecompile(dsl as GradleDsl)
+        stubProfileEndpoint('{"owner":"test","profiles":[{"uuid":"mock-uuid","username":"MockUser"}]}')
+        stubSessionEndpoint()
+
+        when:
+        def result = runner("startTestServer").buildAndFail()
+
+        then: 'generateSources ran successfully'
+        result.output.contains(":generateSources")
+
+        and: 'auth handshake completed (classpath was not corrupted by generateSources)'
+        result.output.contains("Creating session for user 'MockUser'")
+
+        where:
+        dsl << GradleDsl.values()
+    }
+
     private void stubProfileEndpoint(String responseJson) {
         wireMock.stubFor(
                 get(urlPathEqualTo("/my-account/get-profiles"))
@@ -174,11 +197,70 @@ class RunHytaleServerTest extends FunctionalSpec {
 
     private File getCachedAsset() { new File(cachedAssetDir, "RELEASE-1.0.0.zip") }
 
+    private void setupProjectWithDecompile(GradleDsl dsl) {
+        settingsFile(dsl) << [
+                (GradleDsl.GROOVY): """\
+                plugins { id 'dev.hygradle.settings' }
+                hygradle {
+                    hytale {
+                        version = '1.0.0'
+                        decompile = true
+                    }
+                }
+            """.stripIndent(),
+                (GradleDsl.KOTLIN): """\
+                plugins { id("dev.hygradle.settings") }
+                hygradle {
+                    hytale {
+                        version = "1.0.0"
+                        decompile = true
+                    }
+                }
+            """.stripIndent()
+        ][dsl]
+
+        gradleProperties << """\
+            hygradle.hytale.oauth.base=http://localhost:${wireMock.port()}
+            hygradle.hytale.accounts.base=http://localhost:${wireMock.port()}
+            hygradle.hytale.session.base=http://localhost:${wireMock.port()}
+        """.stripIndent()
+
+        buildFile(dsl) << [
+                (GradleDsl.GROOVY): """\
+                plugins { id 'dev.hygradle' }
+                repositories {
+                    maven { url = file('localRepo') }
+                }
+                hygradle {
+                    runs.register('test')
+                }
+            """.stripIndent(),
+                (GradleDsl.KOTLIN): """\
+                plugins { id("dev.hygradle") }
+                repositories {
+                    maven { url = uri("localRepo") }
+                }
+                hygradle {
+                    runs.register("test")
+                }
+            """.stripIndent()
+        ][dsl]
+
+        createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0", createStubServerJar())
+        createStubMavenArtifact("org/hotswapagent", "hotswap-agent-core", "2.0.3", createStubJar())
+        createStubMavenArtifact("dev/hygradle", "harness", "0.0.1", createStubJar())
+        createVineflowerStubArtifact()
+    }
+
     private void createStubMavenArtifact(String groupPath, String artifactId, String version) {
+        createStubMavenArtifact(groupPath, artifactId, version, createStubJar())
+    }
+
+    private void createStubMavenArtifact(String groupPath, String artifactId, String version, byte[] jar) {
         def artifactDir = projectDir.resolve("localRepo/${groupPath}/${artifactId}/${version}").toFile()
         artifactDir.mkdirs()
 
-        new File(artifactDir, "${artifactId}-${version}.jar").bytes = createStubJar()
+        new File(artifactDir, "${artifactId}-${version}.jar").bytes = jar
 
         new File(artifactDir, "${artifactId}-${version}.pom").text = """\
             <project>
@@ -194,6 +276,85 @@ class RunHytaleServerTest extends FunctionalSpec {
         def bytes = new ByteArrayOutputStream()
         def jar = new JarOutputStream(bytes)
         jar.close()
+        bytes.toByteArray()
+    }
+
+    private static byte[] createStubServerJar() {
+        def bytes = new ByteArrayOutputStream()
+        def jar = new JarOutputStream(bytes)
+        jar.putNextEntry(new JarEntry("com/hypixel/hytale/Main.class"))
+        jar.write(new byte[0])
+        jar.closeEntry()
+        jar.close()
+        bytes.toByteArray()
+    }
+
+    private void createVineflowerStubArtifact() {
+        def artifactDir = projectDir.resolve("localRepo/org/vineflower/vineflower/1.11.1").toFile()
+        artifactDir.mkdirs()
+
+        new File(artifactDir, "vineflower-1.11.1.jar").bytes = createVineflowerStubJar()
+
+        new File(artifactDir, "vineflower-1.11.1.pom").text = """\
+            <project>
+                <modelVersion>4.0.0</modelVersion>
+                <groupId>org.vineflower</groupId>
+                <artifactId>vineflower</artifactId>
+                <version>1.11.1</version>
+            </project>
+        """.stripIndent()
+    }
+
+    private byte[] createVineflowerStubJar() {
+        def tmpDir = Files.createTempDirectory("vineflower-stub")
+        def srcDir = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler")
+        Files.createDirectories(srcDir)
+
+        def sourceFile = srcDir.resolve("ConsoleDecompiler.java")
+        sourceFile.text = """\
+            package org.jetbrains.java.decompiler.main.decompiler;
+            import java.io.*;
+            import java.nio.file.*;
+            public class ConsoleDecompiler {
+                public static void main(String[] args) throws Exception {
+                    Path input = Paths.get(args[0]);
+                    Path outputDir = Paths.get(args[1]);
+                    Files.createDirectories(outputDir);
+                    if (Files.isDirectory(input)) {
+                        Files.walk(input).filter(Files::isRegularFile).forEach(source -> {
+                            try {
+                                Path target = outputDir.resolve(input.relativize(source));
+                                Files.createDirectories(target.getParent());
+                                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        });
+                    } else {
+                        Files.copy(input, outputDir.resolve(input.getFileName()),
+                                StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        """.stripIndent()
+
+        def compiler = ToolProvider.getSystemJavaCompiler()
+        def fileManager = compiler.getStandardFileManager(null, null, null)
+        def compilationUnits = fileManager.getJavaFileObjects(sourceFile.toFile())
+        def task = compiler.getTask(null, fileManager, null, ["-d", tmpDir.toString()], null, compilationUnits)
+        assert task.call(): "Failed to compile stub ConsoleDecompiler"
+        fileManager.close()
+
+        def classFile = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class")
+        def bytes = new ByteArrayOutputStream()
+        def jar = new JarOutputStream(bytes)
+        jar.putNextEntry(new JarEntry("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class"))
+        jar.write(classFile.toFile().bytes)
+        jar.closeEntry()
+        jar.close()
+
+        tmpDir.toFile().deleteDir()
+
         bytes.toByteArray()
     }
 

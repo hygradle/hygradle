@@ -10,6 +10,7 @@ import dev.hygradle.internal.extension.hygradleConfigurations
 import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.internal.task.DownloadAssets
 import dev.hygradle.internal.task.ExtractAssets
+import dev.hygradle.internal.task.GenerateSources
 import dev.hygradle.internal.task.plugin.AssembleAssets
 import dev.hygradle.internal.task.plugin.GenerateManifest
 import dev.hygradle.internal.task.run.PrepareRunDirectory
@@ -48,12 +49,29 @@ class TaskPlugin : GradlePlugin<Project> {
           assetCacheDirectory.fileValue(hygradleCacheDir.resolve("assets"))
         }
 
+    val generateSources =
+        if (settings.hytale.decompile.get()) {
+          project.tasks.register<GenerateSources>("generateSources") {
+            group = "hygradle"
+            description = "Decompile Hytale Server sources for IDE integration."
+            serverJar.from(configurations.hytaleClasspath)
+            vineflower.from(configurations.vineflowerClasspath)
+            version.set(settings.hytale.version)
+            outputDirectory.fileValue(hygradleCacheDir.resolve("decompiled"))
+          }
+        } else null
+
     pluginContainer.all {
       val plugin = this
       val configName = name
 
+      if (generateSources != null) {
+        project.tasks
+            .named(sourceSets.getByName(plugin.sourceSetName.get()).compileJavaTaskName)
+            .configure { dependsOn(generateSources) }
+      }
+
       if (plugin is LatePlugin) {
-        @Suppress("UNCHECKED_CAST")
         val runtimeOnly = project.configurations.named("${configName}RuntimeOnly")
 
         val depManifestsConfig =
@@ -146,6 +164,10 @@ class TaskPlugin : GradlePlugin<Project> {
 
       project.tasks.register<RunHytaleServer>("start${name.capitalize()}Server") {
         group = "hygradle/runs/${run.name}"
+
+        if (generateSources != null) {
+          dependsOn(generateSources)
+        }
 
         runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
         classpathProvider.from(configurations.hytaleClasspath)

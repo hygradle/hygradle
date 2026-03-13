@@ -36,6 +36,13 @@ class SettingsConventionPlugin : Plugin<Project> {
             settings.hytale.version.map { dependencies.create("com.hypixel.hytale:Server:$it") },
         )
 
+        if (settings.hytale.decompile.get()) {
+          dependencies.add(
+              configurations.vineflowerOnly.name,
+              "org.vineflower:vineflower:1.11.1",
+          )
+        }
+
         dependencies.addProvider(
             configurations.hotswapAgentOnly.name,
             settings.hotswapAgent.version.map {

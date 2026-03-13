@@ -17,6 +17,11 @@ abstract class HygradleConfigurations @Inject constructor(project: Project) {
   val harnessClasspath =
       project.configurations.resolvable("harnessClasspath") { extendsFrom(harnessOnly) }
 
+  val vineflowerOnly = project.configurations.dependencyScope("vineflowerOnly")
+
+  val vineflowerClasspath =
+      project.configurations.resolvable("vineflowerClasspath") { extendsFrom(vineflowerOnly) }
+
   val hotswapAgentOnly = project.configurations.dependencyScope("hotswapAgentOnly")
 
   val hotswapAgentClasspath =

@@ -16,6 +16,7 @@ plugins {
   alias(libs.plugins.spotless)
   alias(libs.plugins.dokka)
   alias(libs.plugins.git.version)
+  alias(libs.plugins.maven.publish)
 }
 
 group = "dev.hygradle"
@@ -80,7 +81,7 @@ spotless {
 tasks.validatePlugins { enableStricterValidation = true }
 
 gradlePlugin {
-  vcsUrl = "https://github.com/remi-gelinas/hygradle"
+  vcsUrl = "https://github.com/hygradle/hygradle"
   website = "https://hygradle.dev"
 
   testSourceSets.add(sourceSets["functionalTest"])
@@ -103,5 +104,37 @@ gradlePlugin {
 
       compatibility { features { configurationCache = true } }
     }
+  }
+}
+
+mavenPublishing {
+  configure(com.vanniktech.maven.publish.GradlePublishPlugin())
+
+  publishToMavenCentral()
+  signAllPublications()
+
+  pom {
+    name = "Hygradle"
+    description = "A mod development environment for Hytale."
+    inceptionYear = "2026"
+    url = "https://hygradle.dev"
+
+    licenses {
+      license {
+        name = "MIT License"
+        url = "https://opensource.org/licenses/MIT"
+        distribution = "repo"
+      }
+    }
+
+    developers {
+      developer {
+        id = "remi-gelinas"
+        name = "Remi Gelinas"
+        url = "https://github.com/remi-gelinas"
+      }
+    }
+
+    scm { url = "https://github.com/hygradle/hygradle" }
   }
 }
