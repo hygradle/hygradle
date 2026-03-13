@@ -40,16 +40,30 @@ abstract class GenerateSources : DefaultTask() {
     val gavDir = File(outputDir, "com/hypixel/hytale/Server/$version")
     val workDir = File(outputDir, ".work")
 
-    gavDir.deleteRecursively()
-    gavDir.mkdirs()
+    // Set up work directory FIRST — we may need it to shelter the input JAR
     workDir.deleteRecursively()
+    workDir.mkdirs()
 
     val classesDir = File(workDir, "classes")
     val decompileDir = File(workDir, "decompiled")
     classesDir.mkdirs()
     decompileDir.mkdirs()
 
-    val serverJar = serverJar.singleFile
+    // Resolve the server JAR BEFORE cleaning gavDir.  When the decompiled-cache
+    // Maven repo wins resolution, this file lives inside gavDir — relocate it
+    // to the work directory so the upcoming deleteRecursively() doesn't destroy
+    // our own input.  Use canonical paths to handle macOS /var → /private/var symlinks.
+    val resolvedJar = serverJar.singleFile
+    val serverJar =
+        if (resolvedJar.canonicalFile.startsWith(gavDir.canonicalFile)) {
+          File(workDir, resolvedJar.name).also { resolvedJar.copyTo(it) }
+        } else {
+          resolvedJar
+        }
+
+    gavDir.deleteRecursively()
+    gavDir.mkdirs()
+
     val targetJar = File(gavDir, "Server-$version.jar")
     val sourcesJar = File(gavDir, "Server-$version-sources.jar")
     val pom = File(gavDir, "Server-$version.pom")
@@ -82,10 +96,7 @@ abstract class GenerateSources : DefaultTask() {
           }
     }
 
-    // Copy the original server JAR (skip when resolved from our own output directory)
-    if (serverJar.canonicalPath != targetJar.canonicalPath) {
-      serverJar.copyTo(targetJar, overwrite = true)
-    }
+    serverJar.copyTo(targetJar, overwrite = true)
 
     pom.writeText(
         """

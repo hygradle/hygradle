@@ -6,10 +6,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Property
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
-import org.gradle.internal.cc.base.logger
 
 abstract class HytaleAccount : BuildService<HytaleAccount.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters {
@@ -26,7 +26,7 @@ abstract class HytaleAccount : BuildService<HytaleAccount.Parameters>, AutoClose
             oauthBaseUrl = parameters.oauthBaseUrl.get(),
             accountBaseUrl = parameters.accountBaseUrl.get(),
             sessionBaseUrl = parameters.sessionBaseUrl.get(),
-            logger,
+            Logging.getLogger(HytaleAccount::class.java),
             this::loadTokens,
         )
 
@@ -34,8 +34,9 @@ abstract class HytaleAccount : BuildService<HytaleAccount.Parameters>, AutoClose
   private fun loadTokens(): BearerTokens? {
     val file = parameters.tokenFile.get().asFile
     if (!file.exists()) return null
-    return Json.decodeFromStream<SerializableBearerToken>(file.inputStream())
-        .let { BearerTokens(it.accessToken, it.refreshToken) }
+    return Json.decodeFromStream<SerializableBearerToken>(file.inputStream()).let {
+      BearerTokens(it.accessToken, it.refreshToken)
+    }
   }
 
   override fun close() {

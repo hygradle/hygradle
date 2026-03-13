@@ -21,7 +21,7 @@ plugins {
 
 group = "dev.hygradle"
 
-version = "0.0.2"
+version = "0.0.3"
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }

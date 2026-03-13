@@ -21,7 +21,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonIgnoreUnknownKeys
-import org.slf4j.Logger
+import org.gradle.api.logging.Logger
 
 class HytaleServiceImpl(
     engine: HttpClientEngine,
@@ -95,7 +95,7 @@ class HytaleServiceImpl(
   suspend fun startDeviceFlow(): BearerTokens {
     val codeResponse = fetchDeviceCode()
 
-    logger.info(
+    logger.lifecycle(
         """
       Starting OAuth device code flow...
       ===================================================================
