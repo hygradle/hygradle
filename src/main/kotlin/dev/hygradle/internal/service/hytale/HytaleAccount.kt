@@ -31,12 +31,12 @@ abstract class HytaleAccount : BuildService<HytaleAccount.Parameters>, AutoClose
         )
 
   @OptIn(ExperimentalSerializationApi::class)
-  private fun loadTokens(): BearerTokens =
-      parameters.tokenFile
-          .get()
-          .asFile
-          .let { Json.decodeFromStream<SerializableBearerToken>(it.inputStream()) }
-          .let { BearerTokens(it.accessToken, it.refreshToken) }
+  private fun loadTokens(): BearerTokens? {
+    val file = parameters.tokenFile.get().asFile
+    if (!file.exists()) return null
+    return Json.decodeFromStream<SerializableBearerToken>(file.inputStream())
+        .let { BearerTokens(it.accessToken, it.refreshToken) }
+  }
 
   override fun close() {
     if (service.tokens.isEmpty()) return
