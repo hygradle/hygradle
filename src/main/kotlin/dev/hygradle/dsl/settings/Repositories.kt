@@ -5,7 +5,7 @@ import java.io.File
 import java.net.URI
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 
-fun RepositoryHandler.hytale() {
+fun RepositoryHandler.hytale(patchline: Patchline) {
   val gradleHome =
       File(System.getenv("GRADLE_USER_HOME") ?: "${System.getProperty("user.home")}/.gradle")
 
@@ -14,11 +14,9 @@ fun RepositoryHandler.hytale() {
     url = gradleHome.resolve("caches/hygradle/decompiled").toURI()
   }
 
-  Patchline.entries.forEach { patchline ->
-    maven {
-      name = "hytale-${patchline.name.lowercase()}"
-      url = URI.create(patchline.mavenRepository)
-    }
+  maven {
+    name = "hytale-${patchline.name.lowercase()}"
+    url = URI.create(patchline.mavenRepository)
   }
 
   mavenCentral()

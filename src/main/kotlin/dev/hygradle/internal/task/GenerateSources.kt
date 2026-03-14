@@ -10,14 +10,14 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 import org.gradle.process.ExecOperations
 
-@CacheableTask
+@UntrackedTask(because = "Decompilation is expensive, even a subset of the Hytale classes.")
 abstract class GenerateSources : DefaultTask() {
   @get:Inject abstract val exec: ExecOperations
 
@@ -38,6 +38,14 @@ abstract class GenerateSources : DefaultTask() {
     val version = version.get()
     val outputDir = outputDirectory.get().asFile
     val gavDir = File(outputDir, "com/hypixel/hytale/Server/$version")
+
+    // Early-exit: if all output artifacts already exist, skip decompilation.
+    val targetJar = File(gavDir, "Server-$version.jar")
+    val sourcesJar = File(gavDir, "Server-$version-sources.jar")
+    val pom = File(gavDir, "Server-$version.pom")
+    val moduleMetadata = File(gavDir, "Server-$version.module")
+    if (targetJar.exists() && sourcesJar.exists() && pom.exists() && moduleMetadata.exists()) return
+
     val workDir = File(outputDir, ".work")
 
     // Set up work directory FIRST — we may need it to shelter the input JAR
@@ -63,10 +71,6 @@ abstract class GenerateSources : DefaultTask() {
 
     gavDir.deleteRecursively()
     gavDir.mkdirs()
-
-    val targetJar = File(gavDir, "Server-$version.jar")
-    val sourcesJar = File(gavDir, "Server-$version-sources.jar")
-    val pom = File(gavDir, "Server-$version.pom")
 
     // Extract only com/hypixel/hytale/** classes from the server JAR
     fs.copy {
@@ -101,6 +105,11 @@ abstract class GenerateSources : DefaultTask() {
     pom.writeText(
         """
       |<?xml version="1.0" encoding="UTF-8"?>
+      |<!-- This module was also published with a richer model, Gradle metadata,  -->
+      |<!-- which should be used instead. Do not delete the following line which  -->
+      |<!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->
+      |<!-- that they should prefer consuming it instead. -->
+      |<!-- do_not_remove: published-with-gradle-metadata -->
       |<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
       |         xmlns="http://maven.apache.org/POM/4.0.0"
       |         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -109,6 +118,70 @@ abstract class GenerateSources : DefaultTask() {
       |  <artifactId>Server</artifactId>
       |  <version>$version</version>
       |</project>
+      """
+            .trimMargin()
+    )
+
+    moduleMetadata.writeText(
+        """
+      |{
+      |  "formatVersion": "1.1",
+      |  "component": {
+      |    "group": "com.hypixel.hytale",
+      |    "module": "Server",
+      |    "version": "$version",
+      |    "attributes": {
+      |      "org.gradle.status": "release"
+      |    }
+      |  },
+      |  "variants": [
+      |    {
+      |      "name": "apiElements",
+      |      "attributes": {
+      |        "org.gradle.category": "library",
+      |        "org.gradle.dependency.bundling": "external",
+      |        "org.gradle.libraryelements": "jar",
+      |        "org.gradle.usage": "java-api"
+      |      },
+      |      "files": [
+      |        {
+      |          "name": "Server-$version.jar",
+      |          "url": "Server-$version.jar"
+      |        }
+      |      ]
+      |    },
+      |    {
+      |      "name": "runtimeElements",
+      |      "attributes": {
+      |        "org.gradle.category": "library",
+      |        "org.gradle.dependency.bundling": "external",
+      |        "org.gradle.libraryelements": "jar",
+      |        "org.gradle.usage": "java-runtime"
+      |      },
+      |      "files": [
+      |        {
+      |          "name": "Server-$version.jar",
+      |          "url": "Server-$version.jar"
+      |        }
+      |      ]
+      |    },
+      |    {
+      |      "name": "sourcesElements",
+      |      "attributes": {
+      |        "org.gradle.category": "documentation",
+      |        "org.gradle.dependency.bundling": "external",
+      |        "org.gradle.docstype": "sources",
+      |        "org.gradle.usage": "java-runtime"
+      |      },
+      |      "files": [
+      |        {
+      |          "name": "Server-$version-sources.jar",
+      |          "url": "Server-$version-sources.jar"
+      |        }
+      |      ]
+      |    }
+      |  ]
+      |}
       """
             .trimMargin()
     )

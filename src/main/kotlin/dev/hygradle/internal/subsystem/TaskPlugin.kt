@@ -52,7 +52,7 @@ class TaskPlugin : GradlePlugin<Project> {
     val generateSources =
         if (settings.hytale.decompile.get()) {
           project.tasks.register<GenerateSources>("generateSources") {
-            group = "hygradle"
+            group = "hygradle/internal"
             description = "Decompile Hytale Server sources for IDE integration."
             serverJar.from(configurations.hytaleClasspath)
             vineflower.from(configurations.vineflowerClasspath)
@@ -73,10 +73,12 @@ class TaskPlugin : GradlePlugin<Project> {
 
       if (plugin is LatePlugin) {
         val runtimeOnly = project.configurations.named("${configName}RuntimeOnly")
+        val pluginConfig = project.configurations.named("${configName}Plugin")
 
         val depManifestsConfig =
             project.configurations.resolvable("_${configName}DependencyManifests") {
               extendsFrom(runtimeOnly)
+              extendsFrom(pluginConfig)
 
               attributes {
                 attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
@@ -93,9 +95,12 @@ class TaskPlugin : GradlePlugin<Project> {
                   dependencyManifests.from(
                       depManifestsConfig.map { config ->
                         val directPaths =
-                            project.configurations
-                                .getByName("${configName}RuntimeOnly")
-                                .dependencies
+                            (project.configurations
+                                    .getByName("${configName}RuntimeOnly")
+                                    .dependencies +
+                                    project.configurations
+                                        .getByName("${configName}Plugin")
+                                        .dependencies)
                                 .filterIsInstance<ProjectDependency>()
                                 .mapTo(mutableSetOf()) { it.path }
 

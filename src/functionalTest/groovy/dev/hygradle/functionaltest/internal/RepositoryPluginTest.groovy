@@ -10,22 +10,24 @@ class RepositoryPluginTest extends FunctionalSpec {
         settingsFile(dsl) << [
             (GradleDsl.GROOVY): """\
                 import static dev.hygradle.dsl.settings.RepositoriesKt.hytale
+                import dev.hygradle.dsl.hytale.Patchline
                 plugins { id 'dev.hygradle.settings' }
                 dependencyResolutionManagement {
                     repositoriesMode.set(RepositoriesMode.${mode})
                     repositories {
-                        hytale(delegate)
+                        hytale(delegate, Patchline.RELEASE)
                         mavenCentral()
                     }
                 }
             """,
             (GradleDsl.KOTLIN): """\
                 import dev.hygradle.dsl.settings.hytale
+                import dev.hygradle.dsl.hytale.Patchline
                 plugins { id("dev.hygradle.settings") }
                 dependencyResolutionManagement {
                     repositoriesMode.set(RepositoriesMode.${mode})
                     repositories {
-                        hytale()
+                        hytale(Patchline.RELEASE)
                         mavenCentral()
                     }
                 }

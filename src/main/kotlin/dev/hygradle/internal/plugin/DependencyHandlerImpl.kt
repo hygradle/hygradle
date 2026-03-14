@@ -11,9 +11,11 @@ abstract class DependencyHandlerImpl
 internal constructor(
     runtimeOnlyScope: NamedDomainObjectProvider<DependencyScopeConfiguration>,
     compileOnlyScope: NamedDomainObjectProvider<DependencyScopeConfiguration>,
+    pluginScope: NamedDomainObjectProvider<DependencyScopeConfiguration>,
 ) : DependencyHandler {
   init {
     runtimeOnlyScope.configure { fromDependencyCollector(runtimeOnly) }
     compileOnlyScope.configure { fromDependencyCollector(compileOnly) }
+    pluginScope.configure { fromDependencyCollector(plugin) }
   }
 }

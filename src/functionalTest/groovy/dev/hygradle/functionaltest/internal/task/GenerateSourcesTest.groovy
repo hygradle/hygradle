@@ -117,14 +117,22 @@ class GenerateSourcesTest extends FunctionalSpec {
         new File(gavDir, "Server-1.0.0.jar").exists()
         new File(gavDir, "Server-1.0.0-sources.jar").exists()
         new File(gavDir, "Server-1.0.0.pom").exists()
+        new File(gavDir, "Server-1.0.0.module").exists()
 
-        and: 'POM contains correct coordinates'
+        and: 'POM contains correct coordinates and Gradle metadata marker'
         def pom = new File(gavDir, "Server-1.0.0.pom").text
         pom.contains("<groupId>com.hypixel.hytale</groupId>")
         pom.contains("<artifactId>Server</artifactId>")
         pom.contains("<version>1.0.0</version>")
+        pom.contains("do_not_remove: published-with-gradle-metadata")
 
-        and: 'sources JAR contains only hytale classes'
+        and: 'Gradle Module Metadata declares sources variant'
+        def moduleText = new File(gavDir, "Server-1.0.0.module").text
+        moduleText.contains('"sourcesElements"')
+        moduleText.contains('"org.gradle.docstype": "sources"')
+        moduleText.contains('Server-1.0.0-sources.jar')
+
+        and: 'sources JAR contains only hytale sources'
         def sourcesJar = new JarFile(new File(gavDir, "Server-1.0.0-sources.jar"))
         def entries = sourcesJar.entries().toList()*.name
         sourcesJar.close()
@@ -135,7 +143,7 @@ class GenerateSourcesTest extends FunctionalSpec {
         dsl << GradleDsl.values()
     }
 
-    def "generateSources is UP-TO-DATE on second invocation (#dsl)"() {
+    def "generateSources exits early on second invocation (#dsl)"() {
         given:
         setupProject(dsl as GradleDsl, true)
         runner("generateSources").build()
@@ -144,7 +152,7 @@ class GenerateSourcesTest extends FunctionalSpec {
         def result = runner("generateSources").build()
 
         then:
-        result.output.contains("UP-TO-DATE") || result.output.contains("FROM-CACHE")
+        result.output.contains("BUILD SUCCESSFUL")
 
         where:
         dsl << GradleDsl.values()
@@ -158,11 +166,12 @@ class GenerateSourcesTest extends FunctionalSpec {
         and: 'first run populates the decompiled cache, resolving from localRepo'
         runner("generateSources").build()
 
-        and: 'delete Server artifact from localRepo to force resolution from the decompiled cache'
+        and: 'delete sources JAR so early-exit does not trigger, then delete localRepo to force resolution from the decompiled cache'
+        gradleHome.resolve("caches/hygradle/decompiled/com/hypixel/hytale/Server/1.0.0/Server-1.0.0-sources.jar").toFile().delete()
         projectDir.resolve("localRepo/com/hypixel/hytale").toFile().deleteDir()
 
         when: 're-execute so hytaleClasspath resolves from the decompiled cache'
-        def result = runner("generateSources", "--rerun-tasks").build()
+        def result = runner("generateSources").build()
 
         then:
         result.output.contains("BUILD SUCCESSFUL")

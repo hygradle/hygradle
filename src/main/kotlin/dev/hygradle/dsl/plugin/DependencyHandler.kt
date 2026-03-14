@@ -7,4 +7,5 @@ import org.gradle.api.artifacts.dsl.DependencyCollector
 interface DependencyHandler : Dependencies {
   val runtimeOnly: DependencyCollector
   val compileOnly: DependencyCollector
+  val plugin: DependencyCollector
 }

@@ -34,6 +34,7 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.resolvable("${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
+        extendsFrom(pluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
           attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
@@ -45,6 +46,12 @@ internal constructor(private val name: String, private val project: Project) : P
         }
       }
 
+  val pluginConfiguration =
+      project.configurations.dependencyScope("${name}Plugin") {
+        description =
+            "Plugin dependencies (compile + runtime) for plugin '${this@PluginImpl.name}'."
+      }
+
   val runtimeOnlyConfiguration =
       project.configurations.dependencyScope("${name}RuntimeOnly") {
         description = "Runtime-only dependencies for plugin '${this@PluginImpl.name}'."
@@ -54,6 +61,7 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.resolvable("${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(runtimeOnlyConfiguration)
+        extendsFrom(pluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
           attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
@@ -69,6 +77,7 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.consumable("${name}CompileElements") {
         description = "Compile elements (classes directories) for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
+        extendsFrom(pluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
@@ -85,6 +94,7 @@ internal constructor(private val name: String, private val project: Project) : P
       project.configurations.consumable("${name}RuntimeElements") {
         description = "Runtime elements (classes directories) for plugin '${this@PluginImpl.name}'."
         extendsFrom(runtimeOnlyConfiguration)
+        extendsFrom(pluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
@@ -101,6 +111,7 @@ internal constructor(private val name: String, private val project: Project) : P
       project.objects.newInstance<DependencyHandlerImpl>(
           runtimeOnlyConfiguration,
           compileOnlyConfiguration,
+          pluginConfiguration,
       )
 
   override fun dependencies(configure: Action<in DependencyHandler>) =
