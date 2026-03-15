@@ -2,6 +2,7 @@
 
 import com.diffplug.gradle.spotless.SpotlessTask
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.vanniktech.maven.publish.GradlePublishPlugin
 import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -15,27 +16,55 @@ plugins {
   alias(libs.plugins.shadow)
   alias(libs.plugins.spotless)
   alias(libs.plugins.dokka)
-  alias(libs.plugins.git.version)
+  alias(libs.plugins.dokka.javadoc)
   alias(libs.plugins.maven.publish)
 }
 
 group = "dev.hygradle"
 
-version = "0.0.4"
+version = "0.0.5"
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
-  jvmToolchain(25)
+  jvmToolchain(21)
   compilerOptions {
     allWarningsAsErrors = true
     apiVersion = KotlinVersion.KOTLIN_2_3
     languageVersion = apiVersion
-    jvmTarget = JvmTarget.fromTarget("25")
+    jvmTarget = JvmTarget.JVM_21
     freeCompilerArgs.add("-Xexplicit-backing-fields")
   }
 }
 
-tasks.withType<ShadowJar> { archiveClassifier = null as String? }
+java {
+  sourceCompatibility = JavaVersion.VERSION_21
+  targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType<ShadowJar> {
+  archiveClassifier = null as String?
+
+  exclude("kotlin/**")
+  exclude("_COROUTINE/**")
+  exclude("org/intellij/**")
+  exclude("org/jetbrains/annotations/**")
+  exclude("org/slf4j/**")
+
+  relocate("io.ktor", "dev.hygradle.shadow.io.ktor")
+  relocate("kotlinx.coroutines", "dev.hygradle.shadow.kotlinx.coroutines")
+  relocate("kotlinx.io", "dev.hygradle.shadow.kotlinx.io")
+  relocate("kotlinx.serialization", "dev.hygradle.shadow.kotlinx.serialization")
+}
+
+tasks.jar { enabled = false }
+
+tasks.javadoc { enabled = false }
+
+tasks.withType<Jar>().configureEach {
+  if (name == "javadocJar") {
+    from(tasks.named("dokkaGeneratePublicationJavadoc"))
+  }
+}
 
 testing.suites {
   val test by
@@ -57,7 +86,7 @@ testing.suites {
       }
 }
 
-tasks.withType<SpotlessTask>() {
+tasks.withType<SpotlessTask> {
   notCompatibleWithConfigurationCache("https://github.com/diffplug/spotless/issues/2878")
 }
 
@@ -108,7 +137,7 @@ gradlePlugin {
 }
 
 mavenPublishing {
-  configure(com.vanniktech.maven.publish.GradlePublishPlugin())
+  configure(GradlePublishPlugin())
 
   publishToMavenCentral()
   signAllPublications()
