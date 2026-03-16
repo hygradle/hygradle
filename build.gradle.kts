@@ -1,9 +1,6 @@
-@file:Suppress("UnstableApiUsage", "Unused")
+@file:Suppress("UnstableApiUsage")
 
 import com.diffplug.gradle.spotless.SpotlessTask
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.vanniktech.maven.publish.GradlePublishPlugin
-import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
@@ -11,18 +8,12 @@ import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 plugins {
   `kotlin-dsl`
   groovy
+  `maven-publish`
   alias(libs.plugins.kotlin.serialization)
-  alias(libs.plugins.plugin.publish)
-  alias(libs.plugins.shadow)
   alias(libs.plugins.spotless)
   alias(libs.plugins.dokka)
   alias(libs.plugins.dokka.javadoc)
-  alias(libs.plugins.maven.publish)
 }
-
-group = "dev.hygradle"
-
-version = "0.0.5"
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
@@ -39,32 +30,16 @@ kotlin {
 java {
   sourceCompatibility = JavaVersion.VERSION_21
   targetCompatibility = JavaVersion.VERSION_21
+  withSourcesJar()
 }
-
-tasks.withType<ShadowJar> {
-  archiveClassifier = null as String?
-
-  exclude("kotlin/**")
-  exclude("_COROUTINE/**")
-  exclude("org/intellij/**")
-  exclude("org/jetbrains/annotations/**")
-  exclude("org/slf4j/**")
-
-  relocate("io.ktor", "dev.hygradle.shadow.io.ktor")
-  relocate("kotlinx.coroutines", "dev.hygradle.shadow.kotlinx.coroutines")
-  relocate("kotlinx.io", "dev.hygradle.shadow.kotlinx.io")
-  relocate("kotlinx.serialization", "dev.hygradle.shadow.kotlinx.serialization")
-}
-
-tasks.jar { enabled = false }
 
 tasks.javadoc { enabled = false }
 
-tasks.withType<Jar>().configureEach {
-  if (name == "javadocJar") {
-    from(tasks.named("dokkaGeneratePublicationJavadoc"))
-  }
-}
+val javadocJar by
+    tasks.registering(Jar::class) {
+      archiveClassifier = "javadoc"
+      from(tasks.named("dokkaGeneratePublicationJavadoc"))
+    }
 
 testing.suites {
   val test by
@@ -110,60 +85,41 @@ spotless {
 tasks.validatePlugins { enableStricterValidation = true }
 
 gradlePlugin {
-  vcsUrl = "https://github.com/hygradle/hygradle"
-  website = "https://hygradle.dev"
-
   testSourceSets.add(sourceSets["functionalTest"])
 
   plugins {
     register("dev.hygradle") {
       displayName = "Hygradle"
       description = "A mod development environment for Hytale."
-      tags = listOf("hytale, gradle")
       implementationClass = "dev.hygradle.internal.HygradlePlugin"
-
-      compatibility { features { configurationCache = true } }
     }
 
     register("dev.hygradle.settings") {
       displayName = "Hygradle (Settings)"
       description = "A mod development environment for Hytale."
-      tags = listOf("hytale, gradle")
       implementationClass = "dev.hygradle.internal.HygradleSettingsPlugin"
-
-      compatibility { features { configurationCache = true } }
     }
   }
 }
 
-mavenPublishing {
-  configure(GradlePublishPlugin())
+publishing {
+  repositories {
+    maven {
+      name = "hygradle"
+      url = uri("https://maven.hygradle.dev")
 
-  publishToMavenCentral()
-  signAllPublications()
-
-  pom {
-    name = "Hygradle"
-    description = "A mod development environment for Hytale."
-    inceptionYear = "2026"
-    url = "https://hygradle.dev"
-
-    licenses {
-      license {
-        name = "MIT License"
-        url = "https://opensource.org/licenses/MIT"
-        distribution = "repo"
+      credentials(HttpHeaderCredentials::class) {
+        name = "Authorization"
+        value = providers.gradleProperty("hygradlePublishToken").map { "Bearer $it" }.getOrElse("")
       }
-    }
 
-    developers {
-      developer {
-        id = "remi-gelinas"
-        name = "Remi Gelinas"
-        url = "https://github.com/remi-gelinas"
-      }
+      authentication { create<HttpHeaderAuthentication>("header") }
     }
+  }
 
-    scm { url = "https://github.com/hygradle/hygradle" }
+  publications.withType<MavenPublication>().configureEach {
+    if (name == "pluginMaven") {
+      artifact(javadocJar)
+    }
   }
 }
