@@ -13,6 +13,7 @@ import dev.hygradle.internal.task.ExtractAssets
 import dev.hygradle.internal.task.GenerateSources
 import dev.hygradle.internal.task.plugin.AssembleAssets
 import dev.hygradle.internal.task.plugin.GenerateManifest
+import dev.hygradle.internal.task.plugin.rootDirectoryVisitor
 import dev.hygradle.internal.task.run.PrepareRunDirectory
 import dev.hygradle.internal.task.run.RunHytaleServer
 import java.util.Locale.getDefault
@@ -72,6 +73,21 @@ class TaskPlugin : GradlePlugin<Project> {
       }
 
       if (plugin is LatePlugin) {
+        plugin.manifest.includesAssetPack.convention(
+            plugin.sourceSetName
+                .flatMap { sourceSets.named(it) }
+                .map { sourceSet ->
+                  var found = false
+                  sourceSet.resources.asFileTree.visit(
+                      rootDirectoryVisitor(AssembleAssets.ASSET_DIRECTORY_NAMES) {
+                        found = true
+                        stopVisiting()
+                      }
+                  )
+                  found
+                }
+        )
+
         val runtimeOnly = project.configurations.named("${configName}RuntimeOnly")
         val pluginConfig = project.configurations.named("${configName}Plugin")
 

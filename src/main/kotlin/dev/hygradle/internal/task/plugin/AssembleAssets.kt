@@ -58,21 +58,11 @@ abstract class AssembleAssets : DefaultTask() {
     assetDir.mkdirs()
 
     symlink(pluginManifest.get().asFile)
-    symlink(listOf("Common", "Server"))
+    symlink(ASSET_DIRECTORY_NAMES)
   }
 
   private fun symlink(fileNames: List<String>) {
-    pluginResources.asFileTree.visit(
-        object : FileVisitor {
-          override fun visitDir(dirDetails: FileVisitDetails) {
-            if (fileNames.contains(dirDetails.name)) symlink(dirDetails.file)
-          }
-
-          override fun visitFile(fileDetails: FileVisitDetails) {
-            if (fileNames.contains(fileDetails.name)) symlink(fileDetails.file)
-          }
-        }
-    )
+    pluginResources.asFileTree.visit(rootDirectoryVisitor(fileNames) { symlink(file) })
   }
 
   @OptIn(ExperimentalPathApi::class)
@@ -84,4 +74,22 @@ abstract class AssembleAssets : DefaultTask() {
           .toPath()
           .also { it.deleteRecursively() }
           .createSymbolicLinkPointingTo(file.toPath())
+
+  companion object {
+    val ASSET_DIRECTORY_NAMES = listOf("Common", "Server")
+  }
 }
+
+internal fun rootDirectoryVisitor(
+    names: Collection<String>,
+    action: FileVisitDetails.() -> Unit,
+): FileVisitor =
+    object : FileVisitor {
+      override fun visitDir(dirDetails: FileVisitDetails) {
+        if (dirDetails.relativePath.segments.size == 1 && dirDetails.name in names) {
+          action.invoke(dirDetails)
+        }
+      }
+
+      override fun visitFile(fileDetails: FileVisitDetails) {}
+    }

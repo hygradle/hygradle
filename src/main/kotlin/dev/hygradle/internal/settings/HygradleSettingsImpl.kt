@@ -9,7 +9,10 @@ import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class HygradleSettingsImpl @Inject constructor(objects: ObjectFactory) : HygradleSettings {
+abstract class HygradleSettingsImpl : HygradleSettings {
+
+  @get:Inject internal abstract val objects: ObjectFactory
+
   override val hytale: Version =
       objects.newInstance<Version>().apply {
         patchline.convention(Patchline.RELEASE)
