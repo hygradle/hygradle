@@ -68,7 +68,6 @@ tasks.withType<SpotlessTask> {
 dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.foojay.resolver.convention)
   implementation(libs.ktor.client.core)
   implementation(libs.ktor.client.cio)
   implementation(libs.ktor.client.auth)
