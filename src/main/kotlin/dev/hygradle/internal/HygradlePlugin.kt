@@ -1,14 +1,18 @@
 package dev.hygradle.internal
 
 import dev.hygradle.internal.extension.HygradleExtension
+import dev.hygradle.internal.extension.PluginTaskRegistry
 import dev.hygradle.internal.subsystem.ConventionPlugin
 import dev.hygradle.internal.subsystem.DependencyPlugin
+import dev.hygradle.internal.subsystem.GlobalTaskPlugin
+import dev.hygradle.internal.subsystem.PluginTaskPlugin
+import dev.hygradle.internal.subsystem.RunTaskPlugin
 import dev.hygradle.internal.subsystem.ServicePlugin
 import dev.hygradle.internal.subsystem.SettingsConventionPlugin
-import dev.hygradle.internal.subsystem.TaskPlugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
 
@@ -34,7 +38,16 @@ class HygradlePlugin : Plugin<PluginAware> {
           apply(SettingsConventionPlugin::class.java)
           apply(ConventionPlugin::class.java)
           apply(DependencyPlugin::class.java)
-          apply(TaskPlugin::class.java)
+        }
+
+        (extensions.getByType(HygradleExtension::class.java) as ExtensionAware)
+            .extensions
+            .add(PluginTaskRegistry::class.java, "taskRegistry", PluginTaskRegistry())
+
+        with(plugins) {
+          apply(GlobalTaskPlugin::class.java)
+          apply(PluginTaskPlugin::class.java)
+          apply(RunTaskPlugin::class.java)
           apply(ServicePlugin::class.java)
         }
       }

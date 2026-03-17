@@ -6,7 +6,10 @@ import javax.inject.Inject
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 
-abstract class HygradleConfigurations @Inject constructor(project: Project) {
+abstract class HygradleConfigurations {
+
+  @get:Inject abstract val project: Project
+
   val hytaleOnly = project.configurations.dependencyScope("hytaleOnly")
 
   val hytaleClasspath =

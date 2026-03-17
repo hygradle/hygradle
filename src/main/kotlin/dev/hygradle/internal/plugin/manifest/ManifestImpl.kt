@@ -10,14 +10,13 @@ import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class ManifestImpl(pluginName: String) : Manifest {
+abstract class ManifestImpl : Manifest {
 
   @get:Inject abstract val objects: ObjectFactory
 
   @get:Inject abstract val project: Project
 
   init {
-    name.convention(pluginName)
     group.convention(project.provider { project.group.toString().ifEmpty { null } })
     version.convention(
         project.provider { project.version.toString().takeIf { it != Project.DEFAULT_VERSION } }

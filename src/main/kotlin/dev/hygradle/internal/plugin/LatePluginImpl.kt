@@ -12,7 +12,8 @@ abstract class LatePluginImpl(name: String) : PluginImpl(name), LatePlugin {
 
   @get:Inject abstract val objects: ObjectFactory
 
-  override val manifest: Manifest = objects.newInstance<ManifestImpl>(name)
+  override val manifest: Manifest =
+      objects.newInstance<ManifestImpl>().also { it.name.convention(name) }
 
   override fun manifest(manifest: Action<in Manifest>) = manifest.execute(this.manifest)
 }
