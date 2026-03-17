@@ -11,7 +11,7 @@ import org.gradle.kotlin.dsl.newInstance
 
 abstract class HygradleSettingsImpl : HygradleSettings {
 
-  @get:Inject internal abstract val objects: ObjectFactory
+  @get:Inject abstract val objects: ObjectFactory
 
   override val hytale: Version =
       objects.newInstance<Version>().apply {

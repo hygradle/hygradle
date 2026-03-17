@@ -10,16 +10,18 @@ import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class ManifestImpl @Inject internal constructor(pluginName: String) : Manifest {
+abstract class ManifestImpl(pluginName: String) : Manifest {
 
-  @get:Inject internal abstract val objects: ObjectFactory
+  @get:Inject abstract val objects: ObjectFactory
 
-  @get:Inject internal abstract val project: Project
+  @get:Inject abstract val project: Project
 
   init {
     name.convention(pluginName)
-    group.convention(project.providers.gradleProperty("group").orNull)
-    version.convention(project.providers.gradleProperty("version").orNull)
+    group.convention(project.provider { project.group.toString().ifEmpty { null } })
+    version.convention(
+        project.provider { project.version.toString().takeIf { it != Project.DEFAULT_VERSION } }
+    )
     serverVersion.convention(project.hygradleSettings().hytale.version)
     includesAssetPack.convention(false)
   }

@@ -26,7 +26,7 @@ import org.gradle.api.tasks.TaskAction
 abstract class GenerateManifest : DefaultTask() {
   @get:Inject abstract val layout: ProjectLayout
 
-  @get:Nested abstract val spec: Property<Manifest>
+  @get:Nested abstract val manifest: Property<Manifest>
 
   @get:InputFiles
   @get:PathSensitive(PathSensitivity.NONE)
@@ -35,11 +35,11 @@ abstract class GenerateManifest : DefaultTask() {
 
   @get:OutputDirectory abstract val manifestDirectory: DirectoryProperty
 
-  @get:Internal val manifest: Provider<RegularFile> = manifestDirectory.file("manifest.json")
+  @get:Internal val manifestFile: Provider<RegularFile> = manifestDirectory.file("manifest.json")
 
   init {
     manifestDirectory.convention(
-        spec.flatMap {
+        manifest.flatMap {
           it.name.flatMap { name -> layout.buildDirectory.dir("hygradle/plugins/$name/manifest") }
         }
     )
@@ -52,9 +52,9 @@ abstract class GenerateManifest : DefaultTask() {
       explicitNulls = false
     }
 
-    val serializable = spec.get().toSerializable()
+    val serializable = manifest.get().toSerializable()
     val merged = mergeDiscoveredDependencies(serializable, json)
-    manifest.get().asFile.writeText(json.encodeToString(merged))
+    manifestFile.get().asFile.writeText(json.encodeToString(merged))
   }
 
   private fun mergeDiscoveredDependencies(

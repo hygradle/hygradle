@@ -24,6 +24,7 @@ import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE
 import org.gradle.kotlin.dsl.register
 
+// TODO: This is VERY load-bearing now. This has gotta be split up
 class TaskPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
     val hygradle = project.hygradle()
@@ -73,6 +74,7 @@ class TaskPlugin : GradlePlugin<Project> {
       }
 
       if (plugin is LatePlugin) {
+        // TODO: Maybe move this heuristic logic into a dedicated space? It's used in a few places
         plugin.manifest.includesAssetPack.convention(
             plugin.sourceSetName
                 .flatMap { sourceSets.named(it) }
@@ -106,7 +108,7 @@ class TaskPlugin : GradlePlugin<Project> {
             project.tasks
                 .register<GenerateManifest>("generate${configName.capitalize()}Manifest") {
                   group = "hygradle/plugins/$configName"
-                  spec.set(plugin.manifest)
+                  manifest.set(plugin.manifest)
 
                   dependencyManifests.from(
                       depManifestsConfig.map { config ->
@@ -141,7 +143,9 @@ class TaskPlugin : GradlePlugin<Project> {
             attribute(ARTIFACT_TYPE_ATTRIBUTE, HygradleAttributes.PLUGIN_MANIFEST_ARTIFACT_TYPE)
           }
 
-          outgoing.artifact(generateManifest.flatMap { it.manifest }) { builtBy(generateManifest) }
+          outgoing.artifact(generateManifest.flatMap { it.manifestFile }) {
+            builtBy(generateManifest)
+          }
         }
 
         sourceSets.named(plugin.sourceSetName.get()).configure {
@@ -152,7 +156,7 @@ class TaskPlugin : GradlePlugin<Project> {
             .register<AssembleAssets>("assemble${name.capitalize()}Assets") {
               group = "hygradle/plugins/${plugin.name}"
               pluginName.set(plugin.name)
-              pluginManifest.set(generateManifest.flatMap { it.manifest })
+              pluginManifest.set(generateManifest.flatMap { it.manifestFile })
               pluginResources.from(
                   plugin.sourceSetName.flatMap { sourceSets.named(it) }.map { it.resources }
               )
@@ -160,7 +164,6 @@ class TaskPlugin : GradlePlugin<Project> {
             .also { assembleAssets ->
               plugin.assembleAssets.set(assembleAssets)
 
-              // Publish asset directory for cross-project consumers
               project.configurations.named("${name}RuntimeElements").configure {
                 outgoing.artifact(assembleAssets.flatMap { it.assetDirectory }) {
                   builtBy(assembleAssets)

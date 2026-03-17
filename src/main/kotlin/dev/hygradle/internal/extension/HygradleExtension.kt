@@ -6,13 +6,11 @@ import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.dsl.run.Run
 import dev.hygradle.internal.plugin.LatePluginImpl
 import dev.hygradle.internal.run.RunImpl
-import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
 import org.gradle.api.Project
-import org.gradle.api.model.ObjectFactory
 
-abstract class HygradleExtension @Inject constructor(objects: ObjectFactory) : Hygradle {
+abstract class HygradleExtension : Hygradle {
   override fun plugins(action: Action<ExtensiblePolymorphicDomainObjectContainer<Plugin>>) =
       action.execute(this.plugins)
 

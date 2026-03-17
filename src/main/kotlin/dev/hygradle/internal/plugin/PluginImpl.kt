@@ -20,9 +20,10 @@ import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 
-abstract class PluginImpl
-@Inject
-internal constructor(private val name: String, private val project: Project) : Plugin {
+abstract class PluginImpl(private val name: String) : Plugin {
+
+  @get:Inject abstract val project: Project
+
   override fun getName(): String = name
 
   val compileOnlyConfiguration =

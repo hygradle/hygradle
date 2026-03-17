@@ -1,5 +1,3 @@
-@file:Suppress("Unused", "UnstableApiUsage")
-
 package dev.hygradle.internal
 
 import dev.hygradle.internal.extension.HygradleExtension
@@ -14,6 +12,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
 
+@Suppress("Unused")
 class HygradlePlugin : Plugin<PluginAware> {
   override fun apply(target: PluginAware): Unit =
       when (target) {
@@ -25,6 +24,7 @@ class HygradlePlugin : Plugin<PluginAware> {
       with(project) {
         extensions.create<HygradleExtension>("hygradle")
 
+        // TODO: Split this out into a separate subsystem?
         dependencies.attributesSchema {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE)
