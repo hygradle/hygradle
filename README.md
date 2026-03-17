@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="assets/logo.svg" height="168px"/>
+    <img src="https://raw.githubusercontent.com/hygradle/assets/refs/heads/trunk/logo.svg" height="168px"/>
 </div>
 
 <div align="center">
