@@ -77,7 +77,7 @@ abstract class GenerateManifest : DefaultTask() {
       for (file in dependencyManifests.files) {
         val dep = json.decodeFromString<SerializableManifest>(file.readText())
         val key = "${dep.group}:${dep.name}"
-        if (key !in userDeclaredKeys) put(key, dep.version)
+        if (key !in userDeclaredKeys) put(key, "^${dep.version}")
       }
     }
 
@@ -85,7 +85,7 @@ abstract class GenerateManifest : DefaultTask() {
       for (file in optionalDependencyManifests.files) {
         val dep = json.decodeFromString<SerializableManifest>(file.readText())
         val key = "${dep.group}:${dep.name}"
-        if (key !in userDeclaredKeys) put(key, dep.version)
+        if (key !in userDeclaredKeys) put(key, "^${dep.version}")
       }
     }
 
