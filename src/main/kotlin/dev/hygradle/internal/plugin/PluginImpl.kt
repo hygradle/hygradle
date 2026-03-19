@@ -2,8 +2,8 @@
 
 package dev.hygradle.internal.plugin
 
-import dev.hygradle.dsl.plugin.DependencyHandler
 import dev.hygradle.dsl.plugin.Plugin
+import dev.hygradle.dsl.plugin.PluginDependencies
 import dev.hygradle.internal.HygradleAttributes
 import dev.hygradle.internal.HygradleVariant
 import javax.inject.Inject
@@ -36,6 +36,7 @@ abstract class PluginImpl(private val name: String) : Plugin {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
         extendsFrom(pluginConfiguration)
+        extendsFrom(optionalPluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
           attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
@@ -51,6 +52,12 @@ abstract class PluginImpl(private val name: String) : Plugin {
       project.configurations.dependencyScope("${name}Plugin") {
         description =
             "Plugin dependencies (compile + runtime) for plugin '${this@PluginImpl.name}'."
+      }
+
+  val optionalPluginConfiguration =
+      project.configurations.dependencyScope("${name}OptionalPlugin") {
+        description =
+            "Optional plugin dependencies (compile only) for plugin '${this@PluginImpl.name}'."
       }
 
   val runtimeOnlyConfiguration =
@@ -79,9 +86,11 @@ abstract class PluginImpl(private val name: String) : Plugin {
         description = "Compile elements (classes directories) for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnlyConfiguration)
         extendsFrom(pluginConfiguration)
+        extendsFrom(optionalPluginConfiguration)
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE, false)
           attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
           attribute(
               LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
@@ -99,6 +108,7 @@ abstract class PluginImpl(private val name: String) : Plugin {
         attributes {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
+          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE, false)
           attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
           attribute(
               LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
@@ -108,14 +118,10 @@ abstract class PluginImpl(private val name: String) : Plugin {
         }
       }
 
-  override val dependencies: DependencyHandler =
-      project.objects.newInstance<DependencyHandlerImpl>(
-          runtimeOnlyConfiguration,
-          compileOnlyConfiguration,
-          pluginConfiguration,
-      )
+  override val dependencies: PluginDependencies =
+      project.objects.newInstance<PluginDependenciesImpl>(this)
 
-  override fun dependencies(configure: Action<in DependencyHandler>) =
+  override fun dependencies(configure: Action<in PluginDependencies>) =
       configure.execute(dependencies)
 
   override fun sourceSet(sourceSet: Provider<SourceSet>) =

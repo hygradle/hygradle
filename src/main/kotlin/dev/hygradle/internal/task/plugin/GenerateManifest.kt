@@ -33,6 +33,11 @@ abstract class GenerateManifest : DefaultTask() {
   @get:Optional
   abstract val dependencyManifests: ConfigurableFileCollection
 
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.NONE)
+  @get:Optional
+  abstract val optionalDependencyManifests: ConfigurableFileCollection
+
   @get:OutputDirectory abstract val manifestDirectory: DirectoryProperty
 
   @get:Internal val manifestFile: Provider<RegularFile> = manifestDirectory.file("manifest.json")
@@ -61,7 +66,7 @@ abstract class GenerateManifest : DefaultTask() {
       base: SerializableManifest,
       json: Json,
   ): SerializableManifest {
-    if (dependencyManifests.isEmpty) return base
+    if (dependencyManifests.isEmpty && optionalDependencyManifests.isEmpty) return base
 
     val userDeclaredKeys = buildSet {
       base.dependencies?.keys?.let(::addAll)
@@ -76,13 +81,29 @@ abstract class GenerateManifest : DefaultTask() {
       }
     }
 
-    if (discovered.isEmpty()) return base
+    val discoveredOptional = buildMap {
+      for (file in optionalDependencyManifests.files) {
+        val dep = json.decodeFromString<SerializableManifest>(file.readText())
+        val key = "${dep.group}:${dep.name}"
+        if (key !in userDeclaredKeys) put(key, dep.version)
+      }
+    }
+
+    if (discovered.isEmpty() && discoveredOptional.isEmpty()) return base
 
     val mergedDeps = buildMap {
       putAll(discovered)
       base.dependencies?.let(::putAll)
     }
 
-    return base.copy(dependencies = mergedDeps.ifEmpty { null })
+    val mergedOptionalDeps = buildMap {
+      putAll(discoveredOptional)
+      base.optionalDependencies?.let(::putAll)
+    }
+
+    return base.copy(
+        dependencies = mergedDeps.ifEmpty { null },
+        optionalDependencies = mergedOptionalDeps.ifEmpty { null },
+    )
   }
 }

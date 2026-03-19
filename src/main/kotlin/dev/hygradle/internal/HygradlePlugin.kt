@@ -4,10 +4,8 @@ import dev.hygradle.internal.extension.HygradleExtension
 import dev.hygradle.internal.extension.PluginTaskRegistry
 import dev.hygradle.internal.subsystem.ConventionPlugin
 import dev.hygradle.internal.subsystem.DependencyPlugin
-import dev.hygradle.internal.subsystem.GlobalTaskPlugin
 import dev.hygradle.internal.subsystem.PluginTaskPlugin
 import dev.hygradle.internal.subsystem.RunTaskPlugin
-import dev.hygradle.internal.subsystem.ServicePlugin
 import dev.hygradle.internal.subsystem.SettingsConventionPlugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -32,6 +30,9 @@ class HygradlePlugin : Plugin<PluginAware> {
         dependencies.attributesSchema {
           attribute(HygradleAttributes.VARIANT_ATTRIBUTE)
           attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE)
+          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE) {
+            disambiguationRules.add(HygradleAttributes.PreferNonBundleDisambiguation::class.java)
+          }
         }
 
         with(plugins) {
@@ -45,10 +46,8 @@ class HygradlePlugin : Plugin<PluginAware> {
             .add(PluginTaskRegistry::class.java, "taskRegistry", PluginTaskRegistry())
 
         with(plugins) {
-          apply(GlobalTaskPlugin::class.java)
           apply(PluginTaskPlugin::class.java)
           apply(RunTaskPlugin::class.java)
-          apply(ServicePlugin::class.java)
         }
       }
 }

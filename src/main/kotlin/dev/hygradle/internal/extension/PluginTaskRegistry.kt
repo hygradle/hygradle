@@ -1,8 +1,5 @@
 package dev.hygradle.internal.extension
 
-import dev.hygradle.internal.task.DownloadAssets
-import dev.hygradle.internal.task.ExtractAssets
-import dev.hygradle.internal.task.GenerateSources
 import dev.hygradle.internal.task.plugin.AssembleAssets
 import dev.hygradle.internal.task.plugin.GenerateManifest
 import org.gradle.api.Project
@@ -12,9 +9,6 @@ import org.gradle.api.tasks.TaskProvider
 class PluginTaskRegistry {
   val manifestTasks = mutableMapOf<String, TaskProvider<GenerateManifest>>()
   val assetTasks = mutableMapOf<String, TaskProvider<AssembleAssets>>()
-  lateinit var downloadAssets: TaskProvider<DownloadAssets>
-  lateinit var extractAssets: TaskProvider<ExtractAssets>
-  var generateSources: TaskProvider<GenerateSources>? = null
 }
 
 internal fun Project.pluginTaskRegistry(): PluginTaskRegistry =

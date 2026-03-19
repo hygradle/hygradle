@@ -2,6 +2,7 @@ package dev.hygradle.internal
 
 import dev.hygradle.dsl.settings.HygradleSettings
 import dev.hygradle.internal.settings.HygradleSettingsImpl
+import dev.hygradle.internal.subsystem.RootProjectPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import org.gradle.kotlin.dsl.create
@@ -13,5 +14,7 @@ class HygradleSettingsPlugin : Plugin<Settings> {
     settings.gradle.extensions.add(HygradleSettings::class.java, "hygradle", ext)
 
     settings.gradle.settingsEvaluated { ext.lock() }
+
+    settings.gradle.rootProject { plugins.apply(RootProjectPlugin::class.java) }
   }
 }

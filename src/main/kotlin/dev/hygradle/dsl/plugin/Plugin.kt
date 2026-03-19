@@ -15,9 +15,8 @@ interface Plugin : Named {
 
   fun sourceSet(sourceSet: Provider<SourceSet>)
 
-  /** The custom [DependencyHandler] for this plugin. */
-  val dependencies: DependencyHandler
+  val dependencies: PluginDependencies
 
-  /** Configure the [DependencyHandler] for this plugin. */
-  fun dependencies(configure: Action<in DependencyHandler>)
+  /** Configure dependencies for this plugin. */
+  fun dependencies(configure: Action<in PluginDependencies>)
 }
