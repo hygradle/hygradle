@@ -1,5 +1,0 @@
-+++
-bump = "minor"
-+++
-
-test
