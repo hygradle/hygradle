@@ -5,10 +5,10 @@ import dev.hygradle.functionaltest.GradleDsl
 
 class RepositoryPluginTest extends FunctionalSpec {
 
-    def "hytale() repository extension adds patchline repositories (#dsl)"() {
-        given:
-        settingsFile(dsl) << [
-            (GradleDsl.GROOVY): """\
+	def "hytale() repository extension adds patchline repositories (#dsl)"() {
+		given:
+		settingsFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 import static dev.hygradle.dsl.settings.RepositoriesKt.hytale
                 import dev.hygradle.dsl.hytale.Patchline
                 plugins { id 'dev.hygradle.settings' }
@@ -20,7 +20,7 @@ class RepositoryPluginTest extends FunctionalSpec {
                     }
                 }
             """,
-            (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 import dev.hygradle.dsl.settings.hytale
                 import dev.hygradle.dsl.hytale.Patchline
                 plugins { id("dev.hygradle.settings") }
@@ -32,41 +32,48 @@ class RepositoryPluginTest extends FunctionalSpec {
                     }
                 }
             """
-        ][dsl]
-        buildFile(dsl) << ""
+		][dsl]
+		buildFile(dsl) << ""
 
-        when:
-        def result = runner("help").build()
+		when:
+		def result = runner("help").build()
 
-        then:
-        result.output.contains("BUILD SUCCESSFUL")
+		then:
+		result.output.contains("BUILD SUCCESSFUL")
 
-        where:
-        [mode, dsl] << [["PREFER_PROJECT", "PREFER_SETTINGS", "FAIL_ON_PROJECT_REPOS"], GradleDsl.values().toList()].combinations()
-    }
+		where:
+		[mode, dsl] << [
+			[
+				"PREFER_PROJECT",
+				"PREFER_SETTINGS",
+				"FAIL_ON_PROJECT_REPOS"
+			],
+			GradleDsl.values().toList()
+		].combinations()
+	}
 
-    def "project plugin fails with clear error if settings plugin not applied (#dsl)"() {
-        given:
-        settingsFile(dsl) << [
-            (GradleDsl.GROOVY): "rootProject.name = 'test'",
-            (GradleDsl.KOTLIN): 'rootProject.name = "test"'
-        ][dsl]
-        buildFile(dsl) << [
-            (GradleDsl.GROOVY): """\
+	def "project plugin fails with clear error if settings plugin not applied (#dsl)"() {
+		given:
+		settingsFile(dsl) << [
+			(GradleDsl.GROOVY): "rootProject.name = 'test'",
+			(GradleDsl.KOTLIN): 'rootProject.name = "test"'
+		][dsl]
+		buildFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle' }
             """,
-            (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle") }
             """
-        ][dsl]
+		][dsl]
 
-        when:
-        def result = runner("help").buildAndFail()
+		when:
+		def result = runner("help").buildAndFail()
 
-        then:
-        result.output.contains("'dev.hygradle.settings' plugin must be applied in settings.gradle.kts")
+		then:
+		result.output.contains("'dev.hygradle.settings' plugin must be applied in settings.gradle.kts")
 
-        where:
-        dsl << GradleDsl.values()
-    }
+		where:
+		dsl << GradleDsl.values()
+	}
 }

@@ -4,20 +4,19 @@ package dev.hygradle.internal.plugin
 
 import dev.hygradle.dsl.plugin.Plugin
 import dev.hygradle.dsl.plugin.PluginDependencies
-import dev.hygradle.internal.HygradleAttributes
-import dev.hygradle.internal.HygradleVariant
+import dev.hygradle.internal.attributes.Category as HygradleCategory
+import dev.hygradle.internal.attributes.Usage as HygradleUsage
+import java.util.Locale.getDefault
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ConsumableConfiguration
 import org.gradle.api.attributes.Category
-import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.findByType
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 
 abstract class PluginImpl(private val name: String) : Plugin {
@@ -26,95 +25,87 @@ abstract class PluginImpl(private val name: String) : Plugin {
 
   override fun getName(): String = name
 
-  val compileOnlyConfiguration =
-      project.configurations.dependencyScope("${name}CompileOnly") {
+  val taskGroup = "hygradle/plugins/$name"
+
+  val taskSlug = name.replaceFirstChar {
+    if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString()
+  }
+
+  val compileOnly =
+      project.configurations.dependencyScope("_hygradle_${name}CompileOnly") {
         description = "Compile-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  val compileClasspathConfiguration =
-      project.configurations.resolvable("${name}CompileClasspath") {
+  val compileClasspath =
+      project.configurations.resolvable("_hygradle_${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
-        extendsFrom(compileOnlyConfiguration)
-        extendsFrom(pluginConfiguration)
-        extendsFrom(optionalPluginConfiguration)
+        extendsFrom(compileOnly)
+      }
+
+  val compileElements =
+      project.configurations.consumable("_hygradle_${name}CompileElements") {
+        extendsFrom(compileOnly)
+
+        // Consumers don't request a version, so the version here doesn't matter
+        outgoing.capability("dev.hygradle.plugin:${this@PluginImpl.name}:0.0.0")
+
+        addPluginClassDirectories()
+
         attributes {
-          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
-          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
           attribute(
-              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-              project.objects.named(LibraryElements.CLASSES),
+              Usage.USAGE_ATTRIBUTE,
+              project.objects.named(Usage::class.java, HygradleUsage.COMPILE),
           )
-          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
+
+          attribute(
+              Category.CATEGORY_ATTRIBUTE,
+              project.objects.named(Category::class.java, HygradleCategory.HYGRADLE),
+          )
         }
       }
 
-  val pluginConfiguration =
-      project.configurations.dependencyScope("${name}Plugin") {
-        description =
-            "Plugin dependencies (compile + runtime) for plugin '${this@PluginImpl.name}'."
-      }
-
-  val optionalPluginConfiguration =
-      project.configurations.dependencyScope("${name}OptionalPlugin") {
-        description =
-            "Optional plugin dependencies (compile only) for plugin '${this@PluginImpl.name}'."
-      }
-
-  val runtimeOnlyConfiguration =
-      project.configurations.dependencyScope("${name}RuntimeOnly") {
+  val runtimeOnly =
+      project.configurations.dependencyScope("_hygradle_${name}RuntimeOnly") {
         description = "Runtime-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
-  val runtimeClasspathConfiguration =
-      project.configurations.resolvable("${name}RuntimeClasspath") {
+  val runtimeClasspath =
+      project.configurations.resolvable("_hygradle_${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
-        extendsFrom(runtimeOnlyConfiguration)
-        extendsFrom(pluginConfiguration)
+        extendsFrom(runtimeOnly)
+
         attributes {
-          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
-          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
           attribute(
-              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-              project.objects.named(LibraryElements.CLASSES),
+              Usage.USAGE_ATTRIBUTE,
+              project.objects.named(Usage::class.java, HygradleUsage.RUNTIME),
           )
-          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
+
+          attribute(
+              Category.CATEGORY_ATTRIBUTE,
+              project.objects.named(Category::class.java, HygradleCategory.HYGRADLE),
+          )
         }
       }
 
-  val compileElementsConfiguration =
-      project.configurations.consumable("${name}CompileElements") {
-        description = "Compile elements (classes directories) for plugin '${this@PluginImpl.name}'."
-        extendsFrom(compileOnlyConfiguration)
-        extendsFrom(pluginConfiguration)
-        extendsFrom(optionalPluginConfiguration)
-        attributes {
-          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.COMPILE)
-          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
-          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE, false)
-          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
-          attribute(
-              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-              project.objects.named(LibraryElements.CLASSES),
-          )
-          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
-        }
-      }
+  val runtimeElements =
+      project.configurations.consumable("_hygradle_${name}RuntimeElements") {
+        extendsFrom(runtimeOnly)
 
-  val runtimeElementsConfiguration =
-      project.configurations.consumable("${name}RuntimeElements") {
-        description = "Runtime elements (classes directories) for plugin '${this@PluginImpl.name}'."
-        extendsFrom(runtimeOnlyConfiguration)
-        extendsFrom(pluginConfiguration)
+        // Consumers don't request a version, so the version here doesn't matter
+        outgoing.capability("dev.hygradle.plugin:${this@PluginImpl.name}:0.0.0")
+
+        addPluginClassDirectories()
+
         attributes {
-          attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
-          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE, this@PluginImpl.name)
-          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE, false)
-          attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_RUNTIME))
           attribute(
-              LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-              project.objects.named(LibraryElements.CLASSES),
+              Usage.USAGE_ATTRIBUTE,
+              project.objects.named(Usage::class.java, HygradleUsage.RUNTIME),
           )
-          attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
+
+          attribute(
+              Category.CATEGORY_ATTRIBUTE,
+              project.objects.named(Category::class.java, HygradleCategory.HYGRADLE),
+          )
         }
       }
 
@@ -132,7 +123,7 @@ abstract class PluginImpl(private val name: String) : Plugin {
   init {
     sourceSet(project.sourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME))
 
-    compileOnlyConfiguration.configure {
+    compileOnly.configure {
       extendsFrom(
           sourceSetName
               .flatMap { project.sourceSets().named(it) }
@@ -140,27 +131,21 @@ abstract class PluginImpl(private val name: String) : Plugin {
       )
     }
 
-    runtimeOnlyConfiguration.configure {
+    runtimeOnly.configure {
       extendsFrom(
           sourceSetName
               .flatMap { project.sourceSets().named(it) }
               .flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
       )
     }
+  }
 
-    val wireClassesDirs:
-        org.gradle.api.NamedDomainObjectProvider<ConsumableConfiguration>.() -> Unit =
-        {
-          configure {
-            val sourceSet = project.sourceSets().getByName(sourceSetName.get())
-            sourceSet.output.classesDirs.files.forEach { classesDir ->
-              outgoing.artifact(classesDir) { builtBy(sourceSet.output) }
-            }
-          }
-        }
+  private fun ConsumableConfiguration.addPluginClassDirectories() {
+    val sourceSet = project.sourceSets().getByName(sourceSetName.get())
 
-    compileElementsConfiguration.wireClassesDirs()
-    runtimeElementsConfiguration.wireClassesDirs()
+    for (dir in sourceSet.output.classesDirs.files) {
+      outgoing.artifact(dir) { builtBy(sourceSet.output) }
+    }
   }
 }
 

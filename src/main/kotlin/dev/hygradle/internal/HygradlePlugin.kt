@@ -2,50 +2,31 @@ package dev.hygradle.internal
 
 import dev.hygradle.internal.extension.HygradleExtension
 import dev.hygradle.internal.extension.PluginTaskRegistry
+import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.subsystem.ConventionPlugin
 import dev.hygradle.internal.subsystem.DependencyPlugin
 import dev.hygradle.internal.subsystem.PluginTaskPlugin
 import dev.hygradle.internal.subsystem.RunTaskPlugin
 import dev.hygradle.internal.subsystem.SettingsConventionPlugin
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.plugins.PluginAware
 import org.gradle.kotlin.dsl.create
 
 @Suppress("Unused")
-class HygradlePlugin : Plugin<PluginAware> {
-  override fun apply(target: PluginAware): Unit =
-      when (target) {
-        is Project -> apply(target)
-        else -> throw GradleException("Hygradle must be applied at the project level.")
-      }
-
-  private fun apply(project: Project): Unit =
+class HygradlePlugin : Plugin<Project> {
+  override fun apply(project: Project): Unit =
       with(project) {
         extensions.create<HygradleExtension>("hygradle")
 
-        // TODO: Split this out into a separate subsystem?
-        dependencies.attributesSchema {
-          attribute(HygradleAttributes.VARIANT_ATTRIBUTE)
-          attribute(HygradleAttributes.PLUGIN_NAME_ATTRIBUTE)
-          attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE) {
-            disambiguationRules.add(HygradleAttributes.PreferNonBundleDisambiguation::class.java)
-          }
-        }
+        (project.hygradle() as ExtensionAware)
+            .extensions
+            .create<PluginTaskRegistry>("_hygradle_taskRegistry")
 
         with(plugins) {
           apply(SettingsConventionPlugin::class.java)
           apply(ConventionPlugin::class.java)
           apply(DependencyPlugin::class.java)
-        }
-
-        (extensions.getByType(HygradleExtension::class.java) as ExtensionAware)
-            .extensions
-            .add(PluginTaskRegistry::class.java, "taskRegistry", PluginTaskRegistry())
-
-        with(plugins) {
           apply(PluginTaskPlugin::class.java)
           apply(RunTaskPlugin::class.java)
         }

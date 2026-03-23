@@ -2,108 +2,97 @@
 
 package dev.hygradle.internal.subsystem
 
-import dev.hygradle.internal.HygradleAttributes
-import dev.hygradle.internal.HygradleVariant
-import dev.hygradle.internal.extension.globalTaskRegistry
 import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.extension.hygradleConfigurations
 import dev.hygradle.internal.extension.pluginTaskRegistry
+import dev.hygradle.internal.plugin.PluginImpl
 import dev.hygradle.internal.plugin.sourceSets
+import dev.hygradle.internal.run.RunImpl
+import dev.hygradle.internal.service.settings.settingsService
 import dev.hygradle.internal.task.run.PrepareRunDirectory
 import dev.hygradle.internal.task.run.RunHytaleServer
-import dev.hygradle.internal.util.capitalize
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.attributes.Category
-import org.gradle.api.attributes.LibraryElements
-import org.gradle.api.attributes.Usage
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 
 class RunTaskPlugin : Plugin<Project> {
-  override fun apply(project: Project) {
-    val hygradle = project.hygradle()
-    val configurations = project.hygradleConfigurations()
-    val globalRegistry = project.gradle.globalTaskRegistry()
-    val registry = project.pluginTaskRegistry()
-    val sourceSets = project.sourceSets()
-    val objects = project.objects
-    val providers = project.providers
-    val pluginContainer = hygradle.plugins
-    val runs = hygradle.runs
+  override fun apply(project: Project) =
+      with(project) { hygradle().runs.all { configureRun(this as RunImpl) } }
 
-    runs.all {
-      val run = this
+  context(project: Project)
+  private fun configureRun(run: RunImpl) {
+    run.plugins.convention(project.hygradle().plugins.names)
 
-      run.plugins.convention(providers.provider { pluginContainer.names })
-
-      val externalPluginsScope =
-          project.configurations.dependencyScope("_${name}ExternalPlugins") {
-            fromDependencyCollector(run.externalPlugins)
-          }
-
-      val externalPluginClasspath =
-          project.configurations.resolvable("_${name}ExternalPluginClasspath") {
-            extendsFrom(externalPluginsScope)
-            attributes {
-              attribute(HygradleAttributes.VARIANT_ATTRIBUTE, HygradleVariant.RUNTIME)
-              attribute(HygradleAttributes.PLUGIN_BUNDLE_ATTRIBUTE, true)
-              attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
-              attribute(
-                  LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-                  objects.named(LibraryElements.CLASSES),
-              )
-              attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
-            }
-          }
-
-      val prepareRunDirectory =
-          project.tasks.register<PrepareRunDirectory>("prepare${name.capitalize()}RunDirectory") {
-            group = "hygradle/runs/${run.name}"
-            runName.set(run.name)
-          }
-
-      project.tasks.register<RunHytaleServer>("start${name.capitalize()}Server") {
-        group = "hygradle/runs/${run.name}"
-
-        if (globalRegistry.generateSources != null) {
-          dependsOn(globalRegistry.generateSources!!)
+    val prepareRunDirectory =
+        project.tasks.register<PrepareRunDirectory>("prepare${run.taskSlug}RunDirectory") {
+          group = run.taskGroup
+          runName.set(run.name)
         }
 
-        runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
-        classpathProvider.from(configurations.hytaleClasspath)
+    project.tasks.register<RunHytaleServer>("start${run.taskSlug}Server") {
+      group = run.taskGroup
 
-        assets.from(globalRegistry.extractAssets.map { it.assetCacheDirectory.asFileTree })
-        hotswapAgent.from(configurations.hotswapAgentClasspath)
-        harness.from(configurations.harnessClasspath)
+      // TODO: Rip this shit out when the shared server source is available
+      if (project.settingsService().hytaleDecompile.get()) {
+        dependsOn("${project.rootProject.isolated.path}generateSources")
+      }
 
-        classpathProvider.from(externalPluginClasspath)
+      runDirectory.set(prepareRunDirectory.flatMap { it.runDirectory })
+      classpathProvider.from(project.hygradleConfigurations().hytaleClasspath)
 
-        classpathProvider.from(
-            run.plugins.map { names ->
-              objects.fileCollection().apply {
-                for (name in names) {
-                  require(name in pluginContainer.names) {
-                    "Run '${run.name}' references unknown plugin '$name'"
-                  }
+      assets.from(project.hygradleConfigurations().hytaleAssetsClasspath)
+      hotswapAgent.from(project.hygradleConfigurations().hotswapAgentClasspath)
+      harness.from(project.hygradleConfigurations().harnessClasspath)
 
-                  val plugin = pluginContainer.named(name).get()
+      classpathProvider.from(
+          run.plugins.map { names ->
+            names
+                // If a referenced plugin doesn't exist, yeet an error
+                .map { project.hygradle().plugins.named(it) }
+                .map { plugin ->
+                  val files = project.objects.fileCollection()
 
-                  from(
-                      plugin.sourceSetName
-                          .flatMap { sourceSets.named(it) }
+                  files.from(
+                      plugin
+                          .flatMap { it.sourceSetName }
+                          .flatMap { project.sourceSets().named(it) }
                           .map { it.output.classesDirs }
                   )
 
-                  from(project.configurations.named("${name}RuntimeClasspath"))
+                  files.from(plugin.map { (it as PluginImpl).runtimeClasspath })
 
-                  val assetTask = registry.assetTasks[name]
-                  if (assetTask != null) from(assetTask.flatMap { it.assetDirectory })
+                  files.from(
+                      plugin
+                          .flatMap { (it as PluginImpl).runtimeClasspath }
+                          .map {
+                            it.incoming
+                                .artifactView {
+                                  attributes {
+                                    attribute(
+                                        Category.CATEGORY_ATTRIBUTE,
+                                        project.objects.named(
+                                            "hygradle-plugin-assets",
+                                        ),
+                                    )
+                                  }
+                                  lenient(true)
+                                }
+                                .files
+                          }
+                  )
+
+                  files.from(
+                      project.pluginTaskRegistry().assetTasks[plugin.name]?.let { t ->
+                        t.flatMap { it.assetDirectory }
+                      }
+                  )
+
+                  files
                 }
-              }
-            }
-        )
-      }
+          }
+      )
     }
   }
 }

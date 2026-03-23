@@ -13,13 +13,9 @@ import org.gradle.kotlin.dsl.withType
 class DependencyPlugin : GradlePlugin<Project> {
   override fun apply(project: Project) {
     project.hygradle().plugins.withType<Plugin>().all {
-      val pluginConfig = project.configurations.named("${name}Plugin")
       project.configurations
           .named(project.sourceSets().getByName(sourceSetName.get()).compileOnlyConfigurationName)
-          .configure {
-            extendsFrom(project.hygradleConfigurations().hytaleOnly)
-            extendsFrom(pluginConfig)
-          }
+          .configure { extendsFrom(project.hygradleConfigurations().hytaleOnly) }
     }
   }
 }

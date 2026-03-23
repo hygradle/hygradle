@@ -73,37 +73,29 @@ abstract class GenerateManifest : DefaultTask() {
       base.optionalDependencies?.keys?.let(::addAll)
     }
 
-    val discovered = buildMap {
-      for (file in dependencyManifests.files) {
-        val dep = json.decodeFromString<SerializableManifest>(file.readText())
-        val key = "${dep.group}:${dep.name}"
-        if (key !in userDeclaredKeys) put(key, "^${dep.version}")
-      }
-    }
-
-    val discoveredOptional = buildMap {
-      for (file in optionalDependencyManifests.files) {
-        val dep = json.decodeFromString<SerializableManifest>(file.readText())
-        val key = "${dep.group}:${dep.name}"
-        if (key !in userDeclaredKeys) put(key, "^${dep.version}")
-      }
-    }
+    val discovered = discoverDeps(json, dependencyManifests, userDeclaredKeys)
+    val discoveredOptional = discoverDeps(json, optionalDependencyManifests, userDeclaredKeys)
 
     if (discovered.isEmpty() && discoveredOptional.isEmpty()) return base
 
-    val mergedDeps = buildMap {
-      putAll(discovered)
-      base.dependencies?.let(::putAll)
-    }
-
-    val mergedOptionalDeps = buildMap {
-      putAll(discoveredOptional)
-      base.optionalDependencies?.let(::putAll)
-    }
-
     return base.copy(
-        dependencies = mergedDeps.ifEmpty { null },
-        optionalDependencies = mergedOptionalDeps.ifEmpty { null },
+        dependencies = mergeDeps(discovered, base.dependencies),
+        optionalDependencies = mergeDeps(discoveredOptional, base.optionalDependencies),
     )
   }
+
+  private fun discoverDeps(
+      json: Json,
+      files: ConfigurableFileCollection,
+      userDeclaredKeys: Set<String>,
+  ) =
+      files.files
+          .asSequence()
+          .map { json.decodeFromString<SerializableManifest>(it.readText()) }
+          .map { "${it.group}:${it.name}" to "^${it.version}" }
+          .filter { (key, _) -> key !in userDeclaredKeys }
+          .toMap()
+
+  private fun mergeDeps(discovered: Map<String, String>, existing: Map<String, String>?) =
+      (discovered + existing.orEmpty()).ifEmpty { null }
 }

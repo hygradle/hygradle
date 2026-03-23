@@ -24,6 +24,7 @@ kotlin {
     languageVersion = apiVersion
     jvmTarget = JvmTarget.JVM_21
     freeCompilerArgs.add("-Xexplicit-backing-fields")
+    freeCompilerArgs.add("-Xcontext-parameters")
   }
 }
 
@@ -44,10 +45,11 @@ val javadocJar by
 testing.suites {
   val test by
       getting(JvmTestSuite::class) {
-        useSpock()
+        useJUnitJupiter()
+
         dependencies {
+          implementation(libs.kotest.runner)
           implementation(libs.ktor.client.mock)
-          implementation(libs.junit.jupiter)
         }
       }
 
@@ -57,6 +59,7 @@ testing.suites {
         dependencies {
           implementation(gradleTestKit())
           implementation(libs.wiremock)
+          implementation(libs.kotest.wiremock)
         }
       }
 }
@@ -78,7 +81,11 @@ dependencies {
 spotless {
   kotlin { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
   kotlinGradle { ktfmt(libs.versions.ktfmt.get()).metaStyle() }
-  groovy { excludeJava() }
+
+  groovy {
+    greclipse()
+    excludeJava()
+  }
 }
 
 tasks.validatePlugins { enableStricterValidation = true }

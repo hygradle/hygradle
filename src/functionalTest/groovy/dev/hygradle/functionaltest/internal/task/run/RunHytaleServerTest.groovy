@@ -20,73 +20,76 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 
 class RunHytaleServerTest extends FunctionalSpec {
 
-    @Shared
-    WireMockServer wireMock
+	@Shared
+	WireMockServer wireMock
 
-    @TempDir
-    Path gradleHome
+	@TempDir
+	Path gradleHome
 
-    def setupSpec() {
-        wireMock = new WireMockServer(wireMockConfig().dynamicPort())
-        wireMock.start()
-    }
+	def setupSpec() {
+		wireMock = new WireMockServer(wireMockConfig().dynamicPort())
+		wireMock.start()
+	}
 
-    def cleanupSpec() {
-        wireMock.stop()
-    }
+	def cleanupSpec() {
+		wireMock.stop()
+	}
 
-    def cleanup() {
-        wireMock.resetAll()
-    }
+	def cleanup() {
+		wireMock.resetAll()
+	}
 
-    def setup() {
-        tokenFile.parentFile.mkdirs()
-        tokenFile << '{"accessToken":"mock-access","refreshToken":"mock-refresh"}'
+	def setup() {
+		tokenFile.parentFile.mkdirs()
+		tokenFile << '{"accessToken":"mock-access","refreshToken":"mock-refresh"}'
 
-        cachedBundleDir.mkdirs()
-        cachedBundle.bytes = createBundleZip("placeholder-bundle".bytes)
+		cachedBundleDir.mkdirs()
+		cachedBundle.bytes = createBundleZip("placeholder-bundle".bytes)
 
-        cachedAssetDir.mkdirs()
-        cachedAsset.bytes = createBundleZip("placeholder-assets".bytes)
+		cachedAssetDir.mkdirs()
+		cachedAsset.bytes = createBundleZip("placeholder-assets".bytes)
 
-        createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0")
-        createStubMavenArtifact("org/hotswapagent", "hotswap-agent-core", "2.0.3")
-        createStubMavenArtifact("dev/hygradle", "harness", "0.0.1")
-    }
+		createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0")
+		createStubMavenArtifact("org/hotswapagent", "hotswap-agent-core", "2.0.3")
+		createStubMavenArtifact("dev/hygradle", "harness", "0.0.1")
+	}
 
-    @Override
-    protected List<String> baseRunnerArgs() {
-        ["--stacktrace", "--gradle-user-home=" + gradleHome.toString()]
-    }
+	@Override
+	protected List<String> baseRunnerArgs() {
+		[
+			"--stacktrace",
+			"--gradle-user-home=" + gradleHome.toString()
+		]
+	}
 
-    private void setupProject(GradleDsl dsl) {
-        setupProject(dsl, false)
-    }
+	private void setupProject(GradleDsl dsl) {
+		setupProject(dsl, false)
+	}
 
-    private void setupProject(GradleDsl dsl, boolean unknownPlugin) {
-        settingsFile(dsl) << [
-                (GradleDsl.GROOVY): """\
+	private void setupProject(GradleDsl dsl, boolean unknownPlugin) {
+		settingsFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle.settings' }
                 hygradle {
                     hytale { version = '1.0.0' }
                 }
             """.stripIndent(),
-                (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle.settings") }
                 hygradle {
                     hytale { version = "1.0.0" }
                 }
             """.stripIndent()
-        ][dsl]
+		][dsl]
 
-        gradleProperties << """\
+		gradleProperties << """\
             hygradle.hytale.oauth.base=http://localhost:${wireMock.port()}
             hygradle.hytale.accounts.base=http://localhost:${wireMock.port()}
             hygradle.hytale.session.base=http://localhost:${wireMock.port()}
         """.stripIndent()
 
-        buildFile(dsl) << [
-                (GradleDsl.GROOVY): """\
+		buildFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle' }
                 repositories {
                     maven { url = file('localRepo') }
@@ -95,7 +98,7 @@ class RunHytaleServerTest extends FunctionalSpec {
                     ${unknownPlugin ? "runs.register('test') { includePlugins('nonExistent') }" : "runs.register('test')"}
                 }
             """.stripIndent(),
-                (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle") }
                 repositories {
                     maven { url = uri("localRepo") }
@@ -104,102 +107,149 @@ class RunHytaleServerTest extends FunctionalSpec {
                     ${unknownPlugin ? 'runs.register("test") { includePlugins("nonExistent") }' : 'runs.register("test")'}
                 }
             """.stripIndent()
-        ][dsl]
-    }
+		][dsl]
+	}
 
-    def "startTestServer completes auth handshake and fails at process execution (#dsl)"() {
-        given:
-        setupProject(dsl as GradleDsl)
-        stubProfileEndpoint('{"owner":"test","profiles":[{"uuid":"mock-uuid","username":"MockUser"}]}')
-        stubSessionEndpoint()
+	def "startTestServer completes auth handshake and fails at process execution (#dsl)"() {
+		given:
+		setupProject(dsl as GradleDsl)
+		stubProfileEndpoint('{"owner":"test","profiles":[{"uuid":"mock-uuid","username":"MockUser"}]}')
+		stubSessionEndpoint()
 
-        when:
-        def result = runner("startTestServer").buildAndFail()
+		when:
+		def result = runner("startTestServer").buildAndFail()
 
-        then:
-        result.output.contains("Creating session for user 'MockUser'")
-        wireMock.verify(getRequestedFor(urlPathEqualTo("/my-account/get-profiles")))
-        wireMock.verify(postRequestedFor(urlPathEqualTo("/game-session/new")))
+		then:
+		result.output.contains("Creating session for user 'MockUser'")
+		wireMock.verify(getRequestedFor(urlPathEqualTo("/my-account/get-profiles")))
+		wireMock.verify(postRequestedFor(urlPathEqualTo("/game-session/new")))
 
-        where:
-        dsl << GradleDsl.values()
-    }
+		where:
+		dsl << GradleDsl.values()
+	}
 
-    def "startTestServer fails when no profiles are available (#dsl)"() {
-        given:
-        setupProject(dsl as GradleDsl)
-        stubProfileEndpoint('{"owner":"test","profiles":[]}')
+	def "startTestServer fails when no profiles are available (#dsl)"() {
+		given:
+		setupProject(dsl as GradleDsl)
+		stubProfileEndpoint('{"owner":"test","profiles":[]}')
 
-        when:
-        def result = runner("startTestServer").buildAndFail()
+		when:
+		def result = runner("startTestServer").buildAndFail()
 
-        then:
-        !result.output.contains("Creating session")
+		then:
+		!result.output.contains("Creating session")
 
-        where:
-        dsl << GradleDsl.values()
-    }
+		where:
+		dsl << GradleDsl.values()
+	}
 
-    def "startTestServer fails when run references unknown plugin (#dsl)"() {
-        given:
-        setupProject(dsl as GradleDsl, true)
+	def "startTestServer fails when run references unknown plugin (#dsl)"() {
+		given:
+		setupProject(dsl as GradleDsl, true)
 
-        when:
-        def result = runner("startTestServer").buildAndFail()
+		when:
+		def result = runner("startTestServer").buildAndFail()
 
-        then:
-        result.output.contains("references unknown plugin 'nonExistent'")
+		then:
+		result.output.contains("references unknown plugin 'nonExistent'")
 
-        where:
-        dsl << GradleDsl.values()
-    }
+		where:
+		dsl << GradleDsl.values()
+	}
 
-    def "startTestServer with decompile completes auth handshake after generateSources (#dsl)"() {
-        given:
-        setupProjectWithDecompile(dsl as GradleDsl)
-        stubProfileEndpoint('{"owner":"test","profiles":[{"uuid":"mock-uuid","username":"MockUser"}]}')
-        stubSessionEndpoint()
+	def "extractedAssetsClasspath resolves to asset zip file in single project (#dsl)"() {
+		given:
+		setupProject(dsl as GradleDsl)
 
-        when:
-        def result = runner("startTestServer").buildAndFail()
+		buildFile(dsl as GradleDsl) << [
+			(GradleDsl.GROOVY): """
+                tasks.register('printAssets') {
+                    def assetFiles = files(configurations.named('_hygradleExtractedAssetsClasspath'))
+                    inputs.files(assetFiles)
+                    doLast {
+                        assetFiles.each { println "ASSET: \${it}" }
+                    }
+                }
+            """.stripIndent(),
+			(GradleDsl.KOTLIN): """
+                tasks.register("printAssets") {
+                    val assetFiles = files(configurations.named("_hygradleExtractedAssetsClasspath"))
+                    inputs.files(assetFiles)
+                    doLast {
+                        assetFiles.forEach { println("ASSET: ${'$'}it") }
+                    }
+                }
+            """.stripIndent()
+		][dsl]
 
-        then: 'generateSources ran successfully'
-        result.output.contains(":generateSources")
+		when:
+		def result = runner("printAssets").build()
 
-        and: 'auth handshake completed (classpath was not corrupted by generateSources)'
-        result.output.contains("Creating session for user 'MockUser'")
+		then: 'configuration resolves directly to the extracted asset zip file'
+		result.output.readLines().any { line ->
+			line.startsWith("ASSET:") && line.contains("caches/hygradle/assets") && line.endsWith("RELEASE-1.0.0.zip")
+		}
 
-        where:
-        dsl << GradleDsl.values()
-    }
+		where:
+		dsl << GradleDsl.values()
+	}
 
-    private void stubProfileEndpoint(String responseJson) {
-        wireMock.stubFor(
-                get(urlPathEqualTo("/my-account/get-profiles"))
-                        .willReturn(okJson(responseJson))
-        )
-    }
+	def "startTestServer with decompile completes auth handshake after generateSources (#dsl)"() {
+		given:
+		setupProjectWithDecompile(dsl as GradleDsl)
+		stubProfileEndpoint('{"owner":"test","profiles":[{"uuid":"mock-uuid","username":"MockUser"}]}')
+		stubSessionEndpoint()
 
-    private void stubSessionEndpoint() {
-        wireMock.stubFor(
-                post(urlPathEqualTo("/game-session/new"))
-                        .willReturn(okJson('{"sessionToken":"mock-session","identityToken":"mock-identity","expiresAt":"2099-01-01T00:00:00Z"}'))
-        )
-    }
+		when:
+		def result = runner("startTestServer").buildAndFail()
 
-    private File getTokenFile() { projectDir.resolve("build/hygradle/auth/auth.json").toFile() }
+		then: 'generateSources ran successfully'
+		result.output.contains(":generateSources")
 
-    private File getCachedBundleDir() { gradleHome.resolve("caches/hygradle/bundles").toFile() }
+		and: 'auth handshake completed (classpath was not corrupted by generateSources)'
+		result.output.contains("Creating session for user 'MockUser'")
 
-    private File getCachedBundle() { new File(cachedBundleDir, "RELEASE-1.0.0.zip") }
+		where:
+		dsl << GradleDsl.values()
+	}
 
-    private File getCachedAssetDir() { gradleHome.resolve("caches/hygradle/assets").toFile() }
+	private void stubProfileEndpoint(String responseJson) {
+		wireMock.stubFor(
+				get(urlPathEqualTo("/my-account/get-profiles"))
+				.willReturn(okJson(responseJson))
+				)
+	}
 
-    private File getCachedAsset() { new File(cachedAssetDir, "RELEASE-1.0.0.zip") }
+	private void stubSessionEndpoint() {
+		wireMock.stubFor(
+				post(urlPathEqualTo("/game-session/new"))
+				.willReturn(okJson('{"sessionToken":"mock-session","identityToken":"mock-identity","expiresAt":"2099-01-01T00:00:00Z"}'))
+				)
+	}
 
-    private void setupProjectWithDecompile(GradleDsl dsl) {
-        settingsFile(dsl) << [
-                (GradleDsl.GROOVY): """\
+	private File getTokenFile() {
+		gradleHome.resolve("caches/hygradle/auth/auth.json").toFile()
+	}
+
+	private File getCachedBundleDir() {
+		gradleHome.resolve("caches/hygradle/bundles").toFile()
+	}
+
+	private File getCachedBundle() {
+		new File(cachedBundleDir, "RELEASE-1.0.0.zip")
+	}
+
+	private File getCachedAssetDir() {
+		gradleHome.resolve("caches/hygradle/assets").toFile()
+	}
+
+	private File getCachedAsset() {
+		new File(cachedAssetDir, "RELEASE-1.0.0.zip")
+	}
+
+	private void setupProjectWithDecompile(GradleDsl dsl) {
+		settingsFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle.settings' }
                 hygradle {
                     hytale {
@@ -208,7 +258,7 @@ class RunHytaleServerTest extends FunctionalSpec {
                     }
                 }
             """.stripIndent(),
-                (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle.settings") }
                 hygradle {
                     hytale {
@@ -217,16 +267,16 @@ class RunHytaleServerTest extends FunctionalSpec {
                     }
                 }
             """.stripIndent()
-        ][dsl]
+		][dsl]
 
-        gradleProperties << """\
+		gradleProperties << """\
             hygradle.hytale.oauth.base=http://localhost:${wireMock.port()}
             hygradle.hytale.accounts.base=http://localhost:${wireMock.port()}
             hygradle.hytale.session.base=http://localhost:${wireMock.port()}
         """.stripIndent()
 
-        buildFile(dsl) << [
-                (GradleDsl.GROOVY): """\
+		buildFile(dsl) << [
+			(GradleDsl.GROOVY): """\
                 plugins { id 'dev.hygradle' }
                 repositories {
                     maven { url = file('localRepo') }
@@ -235,7 +285,7 @@ class RunHytaleServerTest extends FunctionalSpec {
                     runs.register('test')
                 }
             """.stripIndent(),
-                (GradleDsl.KOTLIN): """\
+			(GradleDsl.KOTLIN): """\
                 plugins { id("dev.hygradle") }
                 repositories {
                     maven { url = uri("localRepo") }
@@ -244,25 +294,25 @@ class RunHytaleServerTest extends FunctionalSpec {
                     runs.register("test")
                 }
             """.stripIndent()
-        ][dsl]
+		][dsl]
 
-        createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0", createStubServerJar())
-        createStubMavenArtifact("org/hotswapagent", "hotswap-agent-core", "2.0.3", createStubJar())
-        createStubMavenArtifact("dev/hygradle", "harness", "0.0.1", createStubJar())
-        createVineflowerStubArtifact()
-    }
+		createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0", createStubServerJar())
+		createStubMavenArtifact("org/hotswapagent", "hotswap-agent-core", "2.0.3", createStubJar())
+		createStubMavenArtifact("dev/hygradle", "harness", "0.0.1", createStubJar())
+		createVineflowerStubArtifact()
+	}
 
-    private void createStubMavenArtifact(String groupPath, String artifactId, String version) {
-        createStubMavenArtifact(groupPath, artifactId, version, createStubJar())
-    }
+	private void createStubMavenArtifact(String groupPath, String artifactId, String version) {
+		createStubMavenArtifact(groupPath, artifactId, version, createStubJar())
+	}
 
-    private void createStubMavenArtifact(String groupPath, String artifactId, String version, byte[] jar) {
-        def artifactDir = projectDir.resolve("localRepo/${groupPath}/${artifactId}/${version}").toFile()
-        artifactDir.mkdirs()
+	private void createStubMavenArtifact(String groupPath, String artifactId, String version, byte[] jar) {
+		def artifactDir = projectDir.resolve("localRepo/${groupPath}/${artifactId}/${version}").toFile()
+		artifactDir.mkdirs()
 
-        new File(artifactDir, "${artifactId}-${version}.jar").bytes = jar
+		new File(artifactDir, "${artifactId}-${version}.jar").bytes = jar
 
-        new File(artifactDir, "${artifactId}-${version}.pom").text = """\
+		new File(artifactDir, "${artifactId}-${version}.pom").text = """\
             <project>
                 <modelVersion>4.0.0</modelVersion>
                 <groupId>${groupPath.replace('/', '.')}</groupId>
@@ -270,32 +320,32 @@ class RunHytaleServerTest extends FunctionalSpec {
                 <version>${version}</version>
             </project>
         """.stripIndent()
-    }
+	}
 
-    private static byte[] createStubJar() {
-        def bytes = new ByteArrayOutputStream()
-        def jar = new JarOutputStream(bytes)
-        jar.close()
-        bytes.toByteArray()
-    }
+	private static byte[] createStubJar() {
+		def bytes = new ByteArrayOutputStream()
+		def jar = new JarOutputStream(bytes)
+		jar.close()
+		bytes.toByteArray()
+	}
 
-    private static byte[] createStubServerJar() {
-        def bytes = new ByteArrayOutputStream()
-        def jar = new JarOutputStream(bytes)
-        jar.putNextEntry(new JarEntry("com/hypixel/hytale/Main.class"))
-        jar.write(new byte[0])
-        jar.closeEntry()
-        jar.close()
-        bytes.toByteArray()
-    }
+	private static byte[] createStubServerJar() {
+		def bytes = new ByteArrayOutputStream()
+		def jar = new JarOutputStream(bytes)
+		jar.putNextEntry(new JarEntry("com/hypixel/hytale/Main.class"))
+		jar.write(new byte[0])
+		jar.closeEntry()
+		jar.close()
+		bytes.toByteArray()
+	}
 
-    private void createVineflowerStubArtifact() {
-        def artifactDir = projectDir.resolve("localRepo/org/vineflower/vineflower/1.11.1").toFile()
-        artifactDir.mkdirs()
+	private void createVineflowerStubArtifact() {
+		def artifactDir = projectDir.resolve("localRepo/org/vineflower/vineflower/1.11.1").toFile()
+		artifactDir.mkdirs()
 
-        new File(artifactDir, "vineflower-1.11.1.jar").bytes = createVineflowerStubJar()
+		new File(artifactDir, "vineflower-1.11.1.jar").bytes = createVineflowerStubJar()
 
-        new File(artifactDir, "vineflower-1.11.1.pom").text = """\
+		new File(artifactDir, "vineflower-1.11.1.pom").text = """\
             <project>
                 <modelVersion>4.0.0</modelVersion>
                 <groupId>org.vineflower</groupId>
@@ -303,15 +353,15 @@ class RunHytaleServerTest extends FunctionalSpec {
                 <version>1.11.1</version>
             </project>
         """.stripIndent()
-    }
+	}
 
-    private byte[] createVineflowerStubJar() {
-        def tmpDir = Files.createTempDirectory("vineflower-stub")
-        def srcDir = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler")
-        Files.createDirectories(srcDir)
+	private byte[] createVineflowerStubJar() {
+		def tmpDir = Files.createTempDirectory("vineflower-stub")
+		def srcDir = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler")
+		Files.createDirectories(srcDir)
 
-        def sourceFile = srcDir.resolve("ConsoleDecompiler.java")
-        sourceFile.text = """\
+		def sourceFile = srcDir.resolve("ConsoleDecompiler.java")
+		sourceFile.text = """\
             package org.jetbrains.java.decompiler.main.decompiler;
             import java.io.*;
             import java.nio.file.*;
@@ -338,33 +388,33 @@ class RunHytaleServerTest extends FunctionalSpec {
             }
         """.stripIndent()
 
-        def compiler = ToolProvider.getSystemJavaCompiler()
-        def fileManager = compiler.getStandardFileManager(null, null, null)
-        def compilationUnits = fileManager.getJavaFileObjects(sourceFile.toFile())
-        def task = compiler.getTask(null, fileManager, null, ["-d", tmpDir.toString()], null, compilationUnits)
-        assert task.call(): "Failed to compile stub ConsoleDecompiler"
-        fileManager.close()
+		def compiler = ToolProvider.getSystemJavaCompiler()
+		def fileManager = compiler.getStandardFileManager(null, null, null)
+		def compilationUnits = fileManager.getJavaFileObjects(sourceFile.toFile())
+		def task = compiler.getTask(null, fileManager, null, ["-d", tmpDir.toString()], null, compilationUnits)
+		assert task.call(): "Failed to compile stub ConsoleDecompiler"
+		fileManager.close()
 
-        def classFile = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class")
-        def bytes = new ByteArrayOutputStream()
-        def jar = new JarOutputStream(bytes)
-        jar.putNextEntry(new JarEntry("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class"))
-        jar.write(classFile.toFile().bytes)
-        jar.closeEntry()
-        jar.close()
+		def classFile = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class")
+		def bytes = new ByteArrayOutputStream()
+		def jar = new JarOutputStream(bytes)
+		jar.putNextEntry(new JarEntry("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class"))
+		jar.write(classFile.toFile().bytes)
+		jar.closeEntry()
+		jar.close()
 
-        tmpDir.toFile().deleteDir()
+		tmpDir.toFile().deleteDir()
 
-        bytes.toByteArray()
-    }
+		bytes.toByteArray()
+	}
 
-    private static byte[] createBundleZip(byte[] content) {
-        def bytes = new ByteArrayOutputStream()
-        def zip = new ZipOutputStream(bytes)
-        zip.putNextEntry(new ZipEntry("Assets.zip"))
-        zip.write(content)
-        zip.closeEntry()
-        zip.close()
-        bytes.toByteArray()
-    }
+	private static byte[] createBundleZip(byte[] content) {
+		def bytes = new ByteArrayOutputStream()
+		def zip = new ZipOutputStream(bytes)
+		zip.putNextEntry(new ZipEntry("Assets.zip"))
+		zip.write(content)
+		zip.closeEntry()
+		zip.close()
+		bytes.toByteArray()
+	}
 }
