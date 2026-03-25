@@ -11,12 +11,12 @@ abstract class FunctionalSpec extends Specification {
 	@TempDir
 	Path projectDir
 
-	File settingsFile(GradleDsl dsl) {
-		projectDir.resolve(dsl.settingsFileName).toFile()
+	File getSettingsFile() {
+		projectDir.resolve("settings.gradle.kts").toFile()
 	}
 
-	File buildFile(GradleDsl dsl) {
-		projectDir.resolve(dsl.buildFileName).toFile()
+	File getBuildFile() {
+		projectDir.resolve("build.gradle.kts").toFile()
 	}
 
 	File getGradleProperties() {

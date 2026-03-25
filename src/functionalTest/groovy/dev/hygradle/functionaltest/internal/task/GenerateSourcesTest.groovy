@@ -1,7 +1,6 @@
 package dev.hygradle.functionaltest.internal.task
 
 import dev.hygradle.functionaltest.FunctionalSpec
-import dev.hygradle.functionaltest.GradleDsl
 import spock.lang.TempDir
 
 import javax.tools.ToolProvider
@@ -29,84 +28,60 @@ class GenerateSourcesTest extends FunctionalSpec {
 		tokenFile << '{"accessToken":"mock-access","refreshToken":"mock-refresh"}'
 	}
 
-	private void setupProject(GradleDsl dsl, boolean decompile) {
-		settingsFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.settings' }
-                hygradle {
-                    hytale {
-                        version = '1.0.0'
-                        decompile = ${decompile}
-                    }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.settings") }
-                hygradle {
-                    hytale {
-                        version = "1.0.0"
-                        decompile = ${decompile}
-                    }
-                }
-            """.stripIndent()
-		][dsl]
+	private void setupProject(boolean decompile) {
+		settingsFile << """\
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale {
+					version = "1.0.0"
+					decompile = ${decompile}
+				}
+				vineflower { version = "0.0.0-stub" }
+			}
+		""".stripIndent()
 
 		gradleProperties << """\
-            hygradle.hytale.oauth.base=http://localhost:0
-            hygradle.hytale.accounts.base=http://localhost:0
-            hygradle.hytale.session.base=http://localhost:0
-        """.stripIndent()
+			hygradle.hytale.oauth.base=http://localhost:0
+			hygradle.hytale.accounts.base=http://localhost:0
+			hygradle.hytale.session.base=http://localhost:0
+		""".stripIndent()
 
-		buildFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
-                repositories {
-                    maven { url = file('localRepo') }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-                repositories {
-                    maven { url = uri("localRepo") }
-                }
-            """.stripIndent()
-		][dsl]
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+			repositories {
+				maven { url = uri("localRepo") }
+			}
+		""".stripIndent()
 
 		createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0")
-		createVineflowerStubArtifact()
+		createVineflowerStubArtifact("0.0.0-stub")
 	}
 
-	def "generateSources task is not registered when decompile is false (#dsl)"() {
+	def "generateSources task is not registered when decompile is false"() {
 		given:
-		setupProject(dsl as GradleDsl, false)
+		setupProject(false)
 
 		when:
 		def result = runner("tasks", "--all").build()
 
 		then:
 		!result.output.readLines().any { it.trim().startsWith("generateSources") }
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "generateSources task is registered when decompile is true (#dsl)"() {
+	def "generateSources task is registered when decompile is true"() {
 		given:
-		setupProject(dsl as GradleDsl, true)
+		setupProject(true)
 
 		when:
 		def result = runner("tasks", "--all").build()
 
 		then:
 		result.output.contains("generateSources")
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "generateSources produces Maven repo layout with JAR, sources JAR, and POM (#dsl)"() {
+	def "generateSources produces Maven repo layout with JAR, sources JAR, and POM"() {
 		given:
-		setupProject(dsl as GradleDsl, true)
+		setupProject(true)
 
 		when:
 		def result = runner("generateSources").build()
@@ -141,14 +116,11 @@ class GenerateSourcesTest extends FunctionalSpec {
 		sourcesJar.close()
 		entries.size() > 0
 		entries.every { it.startsWith("com/hypixel/hytale/") }
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "generateSources exits early on second invocation (#dsl)"() {
+	def "generateSources exits early on second invocation"() {
 		given:
-		setupProject(dsl as GradleDsl, true)
+		setupProject(true)
 		runner("generateSources").build()
 
 		when:
@@ -156,15 +128,12 @@ class GenerateSourcesTest extends FunctionalSpec {
 
 		then:
 		result.output.contains("BUILD SUCCESSFUL")
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "generateSources succeeds on re-execution when resolved from decompiled cache (#dsl)"() {
+	def "generateSources succeeds on re-execution when resolved from decompiled cache"() {
 		given: 'project with decompiled cache as first repo (mirrors real hytale() ordering)'
 		def decompiledUri = decompiledCacheDir.toUri().toString()
-		setupProjectWithDecompiledCache(dsl as GradleDsl, decompiledUri)
+		setupProjectWithDecompiledCache(decompiledUri)
 
 		and: 'first run populates the decompiled cache, resolving from localRepo'
 		runner("generateSources").build()
@@ -178,58 +147,36 @@ class GenerateSourcesTest extends FunctionalSpec {
 
 		then:
 		result.output.contains("BUILD SUCCESSFUL")
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	private void setupProjectWithDecompiledCache(GradleDsl dsl, String decompiledUri) {
-		settingsFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.settings' }
-                hygradle {
-                    hytale {
-                        version = '1.0.0'
-                        decompile = true
-                    }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.settings") }
-                hygradle {
-                    hytale {
-                        version = "1.0.0"
-                        decompile = true
-                    }
-                }
-            """.stripIndent()
-		][dsl]
+	private void setupProjectWithDecompiledCache(String decompiledUri) {
+		settingsFile << """\
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale {
+					version = "1.0.0"
+					decompile = true
+				}
+				vineflower { version = "0.0.0-stub" }
+			}
+		""".stripIndent()
 
 		gradleProperties << """\
-            hygradle.hytale.oauth.base=http://localhost:0
-            hygradle.hytale.accounts.base=http://localhost:0
-            hygradle.hytale.session.base=http://localhost:0
-        """.stripIndent()
+			hygradle.hytale.oauth.base=http://localhost:0
+			hygradle.hytale.accounts.base=http://localhost:0
+			hygradle.hytale.session.base=http://localhost:0
+		""".stripIndent()
 
-		buildFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
-                repositories {
-                    maven { url = '${decompiledUri}' }
-                    maven { url = file('localRepo') }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-                repositories {
-                    maven { url = uri("${decompiledUri}") }
-                    maven { url = uri("localRepo") }
-                }
-            """.stripIndent()
-		][dsl]
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+			repositories {
+				maven { url = uri("${decompiledUri}") }
+				maven { url = uri("localRepo") }
+			}
+		""".stripIndent()
 
 		createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0")
-		createVineflowerStubArtifact()
+		createVineflowerStubArtifact("0.0.0-stub")
 	}
 
 	private void createStubMavenArtifact(String groupPath, String artifactId, String version) {
@@ -239,68 +186,63 @@ class GenerateSourcesTest extends FunctionalSpec {
 		new File(artifactDir, "${artifactId}-${version}.jar").bytes = createStubServerJar()
 
 		new File(artifactDir, "${artifactId}-${version}.pom").text = """\
-            <project>
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>${groupPath.replace('/', '.')}</groupId>
-                <artifactId>${artifactId}</artifactId>
-                <version>${version}</version>
-            </project>
-        """.stripIndent()
+			<project>
+				<modelVersion>4.0.0</modelVersion>
+				<groupId>${groupPath.replace('/', '.')}</groupId>
+				<artifactId>${artifactId}</artifactId>
+				<version>${version}</version>
+			</project>
+		""".stripIndent()
 	}
 
-	private void createVineflowerStubArtifact() {
-		def artifactDir = projectDir.resolve("localRepo/org/vineflower/vineflower/1.11.1").toFile()
+	private void createVineflowerStubArtifact(String version) {
+		def artifactDir = projectDir.resolve("localRepo/org/vineflower/vineflower/${version}").toFile()
 		artifactDir.mkdirs()
 
-		new File(artifactDir, "vineflower-1.11.1.jar").bytes = createVineflowerStubJar()
+		new File(artifactDir, "vineflower-${version}.jar").bytes = createVineflowerStubJar()
 
-		new File(artifactDir, "vineflower-1.11.1.pom").text = """\
-            <project>
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>org.vineflower</groupId>
-                <artifactId>vineflower</artifactId>
-                <version>1.11.1</version>
-            </project>
-        """.stripIndent()
+		new File(artifactDir, "vineflower-${version}.pom").text = """\
+			<project>
+				<modelVersion>4.0.0</modelVersion>
+				<groupId>org.vineflower</groupId>
+				<artifactId>vineflower</artifactId>
+				<version>${version}</version>
+			</project>
+		""".stripIndent()
 	}
 
-	/**
-	 * Creates a JAR with a stub ConsoleDecompiler that copies the input file to the output dir.
-	 * This simulates Vineflower's behavior without actually decompiling anything.
-	 */
 	private byte[] createVineflowerStubJar() {
-		// Compile the stub class using javac
 		def tmpDir = Files.createTempDirectory("vineflower-stub")
 		def srcDir = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler")
 		Files.createDirectories(srcDir)
 
 		def sourceFile = srcDir.resolve("ConsoleDecompiler.java")
 		sourceFile.text = """\
-            package org.jetbrains.java.decompiler.main.decompiler;
-            import java.io.*;
-            import java.nio.file.*;
-            public class ConsoleDecompiler {
-                public static void main(String[] args) throws Exception {
-                    Path input = Paths.get(args[0]);
-                    Path outputDir = Paths.get(args[1]);
-                    Files.createDirectories(outputDir);
-                    if (Files.isDirectory(input)) {
-                        Files.walk(input).filter(Files::isRegularFile).forEach(source -> {
-                            try {
-                                Path target = outputDir.resolve(input.relativize(source));
-                                Files.createDirectories(target.getParent());
-                                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        });
-                    } else {
-                        Files.copy(input, outputDir.resolve(input.getFileName()),
-                                StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
-            }
-        """.stripIndent()
+			package org.jetbrains.java.decompiler.main.decompiler;
+			import java.io.*;
+			import java.nio.file.*;
+			public class ConsoleDecompiler {
+				public static void main(String[] args) throws Exception {
+					Path input = Paths.get(args[0]);
+					Path outputDir = Paths.get(args[1]);
+					Files.createDirectories(outputDir);
+					if (Files.isDirectory(input)) {
+						Files.walk(input).filter(Files::isRegularFile).forEach(source -> {
+							try {
+								Path target = outputDir.resolve(input.relativize(source));
+								Files.createDirectories(target.getParent());
+								Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+							} catch (IOException e) {
+								throw new UncheckedIOException(e);
+							}
+						});
+					} else {
+						Files.copy(input, outputDir.resolve(input.getFileName()),
+								StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
+			}
+		""".stripIndent()
 
 		def compiler = ToolProvider.getSystemJavaCompiler()
 		def fileManager = compiler.getStandardFileManager(null, null, null)
@@ -309,7 +251,6 @@ class GenerateSourcesTest extends FunctionalSpec {
 		assert task.call(): "Failed to compile stub ConsoleDecompiler"
 		fileManager.close()
 
-		// Package into JAR
 		def classFile = tmpDir.resolve("org/jetbrains/java/decompiler/main/decompiler/ConsoleDecompiler.class")
 		def bytes = new ByteArrayOutputStream()
 		def jar = new JarOutputStream(bytes)
@@ -318,7 +259,6 @@ class GenerateSourcesTest extends FunctionalSpec {
 		jar.closeEntry()
 		jar.close()
 
-		// Cleanup
 		tmpDir.toFile().deleteDir()
 
 		bytes.toByteArray()

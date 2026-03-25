@@ -11,7 +11,7 @@ import org.gradle.api.attributes.Usage
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.named
 
-abstract class HygradleConfigurations {
+abstract class Configurations : ExtensionAware {
 
   @get:Inject abstract val project: Project
 
@@ -47,5 +47,5 @@ abstract class HygradleConfigurations {
       }
 }
 
-internal fun Project.hygradleConfigurations(): HygradleConfigurations =
-    (hygradle() as ExtensionAware).extensions.getByType(HygradleConfigurations::class.java)
+internal fun Project.hygradleConfigurations(): Configurations =
+    hygradle().extensions.getByType(Configurations::class.java)

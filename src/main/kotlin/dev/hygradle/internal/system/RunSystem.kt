@@ -1,10 +1,10 @@
 @file:Suppress("UnstableApiUsage")
 
-package dev.hygradle.internal.subsystem
+package dev.hygradle.internal.system
 
 import dev.hygradle.internal.extension.hygradle
 import dev.hygradle.internal.extension.hygradleConfigurations
-import dev.hygradle.internal.extension.pluginTaskRegistry
+import dev.hygradle.internal.plugin.LatePluginImpl
 import dev.hygradle.internal.plugin.PluginImpl
 import dev.hygradle.internal.plugin.sourceSets
 import dev.hygradle.internal.run.RunImpl
@@ -17,7 +17,7 @@ import org.gradle.api.attributes.Category
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 
-class RunTaskPlugin : Plugin<Project> {
+class RunSystem : Plugin<Project> {
   override fun apply(project: Project) =
       with(project) { hygradle().runs.all { configureRun(this as RunImpl) } }
 
@@ -49,7 +49,6 @@ class RunTaskPlugin : Plugin<Project> {
       classpathProvider.from(
           run.plugins.map { names ->
             names
-                // If a referenced plugin doesn't exist, yeet an error
                 .map { project.hygradle().plugins.named(it) }
                 .map { plugin ->
                   val files = project.objects.fileCollection()
@@ -84,9 +83,12 @@ class RunTaskPlugin : Plugin<Project> {
                   )
 
                   files.from(
-                      project.pluginTaskRegistry().assetTasks[plugin.name]?.let { t ->
-                        t.flatMap { it.assetDirectory }
-                      }
+                      plugin
+                          .map {
+                            if (it is LatePluginImpl)
+                                return@map it.assembleAssets.flatMap { t -> t.assetDirectory }
+                          }
+                          .orNull
                   )
 
                   files

@@ -1,7 +1,6 @@
 package dev.hygradle.functionaltest.internal
 
 import dev.hygradle.functionaltest.FunctionalSpec
-import dev.hygradle.functionaltest.GradleDsl
 import groovy.json.JsonSlurper
 
 import java.util.jar.JarOutputStream
@@ -15,13 +14,13 @@ class ManifestGenerationTest extends FunctionalSpec {
 		new File(artifactDir, "${artifactId}-${version}.jar").bytes = createStubJar()
 
 		new File(artifactDir, "${artifactId}-${version}.pom").text = """\
-            <project>
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>${groupPath.replace('/', '.')}</groupId>
-                <artifactId>${artifactId}</artifactId>
-                <version>${version}</version>
-            </project>
-        """.stripIndent()
+			<project>
+				<modelVersion>4.0.0</modelVersion>
+				<groupId>${groupPath.replace('/', '.')}</groupId>
+				<artifactId>${artifactId}</artifactId>
+				<version>${version}</version>
+			</project>
+		""".stripIndent()
 	}
 
 	private static byte[] createStubJar() {
@@ -31,70 +30,41 @@ class ManifestGenerationTest extends FunctionalSpec {
 		bytes.toByteArray()
 	}
 
-	private void setupSinglePlugin(GradleDsl dsl, String extraManifestConfig = '') {
+	private void setupSinglePlugin(String extraManifestConfig = '') {
 		createStubMavenArtifact("com/hypixel/hytale", "Server", "1.0.0")
 
-		settingsFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                    plugins { id 'dev.hygradle.settings' }
-                    hygradle {
-                        hytale { version = '1.0.0' }
-                    }
-                """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                    plugins { id("dev.hygradle.settings") }
-                    hygradle {
-                        hytale { version = "1.0.0" }
-                    }
-                """.stripIndent()
-		][dsl]
+		settingsFile << """\
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale { version = "1.0.0" }
+			}
+		""".stripIndent()
 
-		buildFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                    plugins { id 'dev.hygradle' }
-                    repositories {
-                        maven { url = rootProject.file('localRepo') }
-                    }
-                    group = 'com.example'
-                    version = '1.0.0'
-                    hygradle {
-                        plugins {
-                            register('testPlugin', dev.hygradle.dsl.plugin.LatePlugin) {
-                                manifest {
-                                    mainClass = 'com.example.TestPlugin'
-                                    ${extraManifestConfig}
-                                }
-                            }
-                        }
-                    }
-                """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                    plugins { id("dev.hygradle") }
-                    repositories {
-                        maven { url = uri(rootProject.file("localRepo")) }
-                    }
-                    group = "com.example"
-                    version = "1.0.0"
-                    hygradle {
-                        plugins {
-                            register<dev.hygradle.dsl.plugin.LatePlugin>("testPlugin") {
-                                manifest {
-                                    mainClass = "com.example.TestPlugin"
-                                    ${extraManifestConfig}
-                                }
-                            }
-                        }
-                    }
-                """.stripIndent()
-		][dsl]
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+			repositories {
+				maven { url = uri("localRepo") }
+			}
+			group = "com.example"
+			version = "1.0.0"
+			hygradle {
+				plugins {
+					register<dev.hygradle.dsl.plugin.LatePlugin>("testPlugin") {
+						manifest {
+							mainClass = "com.example.TestPlugin"
+							${extraManifestConfig}
+						}
+					}
+				}
+			}
+		""".stripIndent()
 
-		// Minimal source so compilation succeeds
 		def srcDir = projectDir.resolve("src/main/java/com/example").toFile()
 		srcDir.mkdirs()
 		new File(srcDir, "TestPlugin.java") << """\
-            package com.example;
-            public class TestPlugin {}
-        """.stripIndent()
+			package com.example;
+			public class TestPlugin {}
+		""".stripIndent()
 	}
 
 	private Map parseManifest() {
@@ -105,9 +75,9 @@ class ManifestGenerationTest extends FunctionalSpec {
 
 	// --- Auto-detection scenarios ---
 
-	def "IncludesAssetPack is true when root-level Server directory exists (#dsl)"() {
+	def "IncludesAssetPack is true when root-level Server directory exists"() {
 		given:
-		setupSinglePlugin(dsl as GradleDsl)
+		setupSinglePlugin()
 		def serverDir = projectDir.resolve("src/main/resources/Server").toFile()
 		serverDir.mkdirs()
 		new File(serverDir, "dummy.txt") << "content"
@@ -117,14 +87,11 @@ class ManifestGenerationTest extends FunctionalSpec {
 
 		then:
 		parseManifest().IncludesAssetPack == true
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "IncludesAssetPack is true when root-level Common directory exists (#dsl)"() {
+	def "IncludesAssetPack is true when root-level Common directory exists"() {
 		given:
-		setupSinglePlugin(dsl as GradleDsl)
+		setupSinglePlugin()
 		def commonDir = projectDir.resolve("src/main/resources/Common").toFile()
 		commonDir.mkdirs()
 		new File(commonDir, "dummy.txt") << "content"
@@ -134,28 +101,22 @@ class ManifestGenerationTest extends FunctionalSpec {
 
 		then:
 		parseManifest().IncludesAssetPack == true
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "IncludesAssetPack is false when no resource directories exist (#dsl)"() {
+	def "IncludesAssetPack is false when no resource directories exist"() {
 		given:
-		setupSinglePlugin(dsl as GradleDsl)
+		setupSinglePlugin()
 
 		when:
 		runner("generateTestPluginManifest").build()
 
 		then:
 		parseManifest().IncludesAssetPack == false
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "IncludesAssetPack is false when asset directory is nested, not root-level (#dsl)"() {
+	def "IncludesAssetPack is false when asset directory is nested, not root-level"() {
 		given:
-		setupSinglePlugin(dsl as GradleDsl)
+		setupSinglePlugin()
 		def nestedDir = projectDir.resolve("src/main/resources/sub/Common").toFile()
 		nestedDir.mkdirs()
 		new File(nestedDir, "dummy.txt") << "content"
@@ -165,38 +126,24 @@ class ManifestGenerationTest extends FunctionalSpec {
 
 		then:
 		parseManifest().IncludesAssetPack == false
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
 	// --- User override scenarios ---
 
-	def "explicit includesAssetPack true overrides auto-detection when no dirs present (#dsl)"() {
+	def "explicit includesAssetPack true overrides auto-detection when no dirs present"() {
 		given:
-		def extra = [
-			(GradleDsl.GROOVY): "includesAssetPack = true",
-			(GradleDsl.KOTLIN): "includesAssetPack = true"
-		][dsl]
-		setupSinglePlugin(dsl as GradleDsl, extra as String)
+		setupSinglePlugin('includesAssetPack = true')
 
 		when:
 		runner("generateTestPluginManifest").build()
 
 		then:
 		parseManifest().IncludesAssetPack == true
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "explicit includesAssetPack false overrides auto-detection when dirs present (#dsl)"() {
+	def "explicit includesAssetPack false overrides auto-detection when dirs present"() {
 		given:
-		def extra = [
-			(GradleDsl.GROOVY): "includesAssetPack = false",
-			(GradleDsl.KOTLIN): "includesAssetPack = false"
-		][dsl]
-		setupSinglePlugin(dsl as GradleDsl, extra as String)
+		setupSinglePlugin('includesAssetPack = false')
 		def serverDir = projectDir.resolve("src/main/resources/Server").toFile()
 		serverDir.mkdirs()
 		new File(serverDir, "dummy.txt") << "content"
@@ -206,8 +153,5 @@ class ManifestGenerationTest extends FunctionalSpec {
 
 		then:
 		parseManifest().IncludesAssetPack == false
-
-		where:
-		dsl << GradleDsl.values()
 	}
 }

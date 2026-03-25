@@ -17,10 +17,8 @@ abstract class ManifestImpl : Manifest {
   @get:Inject abstract val project: Project
 
   init {
-    group.convention(project.provider { project.group.toString().ifEmpty { null } })
-    version.convention(
-        project.provider { project.version.toString().takeIf { it != Project.DEFAULT_VERSION } }
-    )
+    group.convention(project.group.toString().ifEmpty { null })
+    version.convention(project.version.toString().takeIf { it != Project.DEFAULT_VERSION })
     serverVersion.convention(project.settingsService().hytaleVersion)
     includesAssetPack.convention(false)
   }

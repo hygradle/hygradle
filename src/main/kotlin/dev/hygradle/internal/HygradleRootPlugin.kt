@@ -1,7 +1,8 @@
 package dev.hygradle.internal
 
-import dev.hygradle.internal.extension.HygradleRootConfigurations
-import dev.hygradle.internal.extension.rootHygradleConfigurations
+import dev.hygradle.internal.extension.RepositoryExtension
+import dev.hygradle.internal.extension.root.RootConfigurations
+import dev.hygradle.internal.extension.root.rootConfigurations
 import dev.hygradle.internal.service.settings.settingsService
 import dev.hygradle.internal.task.DownloadAssets
 import dev.hygradle.internal.task.ExtractAssets
@@ -9,14 +10,15 @@ import dev.hygradle.internal.task.GenerateSources
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.register
 
 class HygradleRootPlugin : Plugin<Project> {
   override fun apply(project: Project) =
       with(project) {
-        val ext = extensions.create<HygradleRootConfigurations>("hygradle-root-configurations")
+        val configs = extensions.create<RootConfigurations>("hygradle-root-configurations")
 
-        ext.hytaleOnly.configure {
+        configs.hytaleOnly.configure {
           dependencies.addLater(
               settingsService().hytaleVersion.map {
                 dependencyFactory.create("com.hypixel.hytale:Server:$it")
@@ -24,17 +26,29 @@ class HygradleRootPlugin : Plugin<Project> {
           )
         }
 
-        ext.vineflowerOnly.configure {
-          dependencies.add(dependencyFactory.create("org.vineflower:vineflower:1.11.1"))
+        configs.vineflowerOnly.configure {
+          dependencies.addLater(
+              settingsService().vineflowerVersion.map {
+                dependencyFactory.create("org.vineflower:vineflower:$it")
+              }
+          )
         }
 
         registerTasks()
+
+        val repoExt =
+            objects.newInstance<RepositoryExtension>(
+                project.repositories,
+                settingsService().hytalePatchline,
+            )
+
+        repoExt.repositories()
       }
 
   context(project: Project)
   private fun registerTasks() {
     val hygradleSettings = project.settingsService()
-    val rootConfigs = project.rootHygradleConfigurations()
+    val rootConfigs = project.rootConfigurations()
     val cacheDir = project.gradle.gradleUserHomeDir.resolve("caches/hygradle")
 
     val downloadAssets =
@@ -58,6 +72,7 @@ class HygradleRootPlugin : Plugin<Project> {
       }
     }
 
+    // TODO: Remove this shit once the source is shared
     if (hygradleSettings.hytaleDecompile.get()) {
       project.tasks.register<GenerateSources>("generateSources") {
         group = "hygradle/internal"

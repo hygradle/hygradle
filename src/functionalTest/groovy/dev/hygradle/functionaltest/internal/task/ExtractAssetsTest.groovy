@@ -1,7 +1,6 @@
 package dev.hygradle.functionaltest.internal.task
 
 import dev.hygradle.functionaltest.FunctionalSpec
-import dev.hygradle.functionaltest.GradleDsl
 import spock.lang.TempDir
 
 import java.nio.file.Path
@@ -31,45 +30,30 @@ class ExtractAssetsTest extends FunctionalSpec {
 		]
 	}
 
-	private void setupProject(GradleDsl dsl) {
-		settingsFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.settings' }
-                hygradle {
-                    hytale {
-                        version = '1.0.0'
-                    }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.settings") }
-                hygradle {
-                    hytale {
-                        version = "1.0.0"
-                    }
-                }
-            """.stripIndent()
-		][dsl]
+	private void setupProject() {
+		settingsFile << """\
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale {
+					version = "1.0.0"
+				}
+			}
+		""".stripIndent()
 
 		gradleProperties << """\
-            hygradle.hytale.oauth.base=http://localhost:0
-            hygradle.hytale.accounts.base=http://localhost:0
-            hygradle.hytale.session.base=http://localhost:0
-        """.stripIndent()
+			hygradle.hytale.oauth.base=http://localhost:0
+			hygradle.hytale.accounts.base=http://localhost:0
+			hygradle.hytale.session.base=http://localhost:0
+		""".stripIndent()
 
-		buildFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-            """.stripIndent()
-		][dsl]
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+		""".stripIndent()
 	}
 
-	def "extractAssets extracts inner Assets.zip from bundle to asset cache (#dsl)"() {
+	def "extractAssets extracts inner Assets.zip from bundle to asset cache"() {
 		given:
-		setupProject(dsl)
+		setupProject()
 
 		when:
 		def result = runner("extractAssets").build()
@@ -78,14 +62,11 @@ class ExtractAssetsTest extends FunctionalSpec {
 		result.output.contains("BUILD SUCCESSFUL")
 		cachedAsset.exists()
 		cachedAsset.bytes == INNER_ASSETS_CONTENT
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "extractAssets skips extraction when assets are already cached (#dsl)"() {
+	def "extractAssets skips extraction when assets are already cached"() {
 		given:
-		setupProject(dsl)
+		setupProject()
 		def preExisting = "already-cached".bytes
 		cachedAssetDir.mkdirs()
 		cachedAsset.bytes = preExisting
@@ -96,14 +77,11 @@ class ExtractAssetsTest extends FunctionalSpec {
 		then:
 		result.output.contains("BUILD SUCCESSFUL")
 		cachedAsset.bytes == preExisting
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "extractAssets cleans stale assets from cache (#dsl)"() {
+	def "extractAssets cleans stale assets from cache"() {
 		given:
-		setupProject(dsl)
+		setupProject()
 		cachedAssetDir.mkdirs()
 		def staleAsset = new File(cachedAssetDir, "RELEASE-0.9.0.zip")
 		staleAsset << "stale"
@@ -116,9 +94,6 @@ class ExtractAssetsTest extends FunctionalSpec {
 		!staleAsset.exists()
 		cachedAsset.exists()
 		cachedAsset.bytes == INNER_ASSETS_CONTENT
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
 	private static byte[] createBundleZip(byte[] assetsContent) {

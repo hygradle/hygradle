@@ -2,20 +2,45 @@
 
 package dev.hygradle.internal
 
+import dev.hygradle.dsl.extension.Repository
+import dev.hygradle.dsl.settings.HygradleSettings
+import dev.hygradle.internal.extension.RepositoryExtension
 import dev.hygradle.internal.service.hytale.HytaleAccount
 import dev.hygradle.internal.service.settings.HygradleSettingsService
 import dev.hygradle.internal.settings.HygradleSettingsImpl
 import dev.hygradle.internal.settings.hygradle
+import javax.inject.Inject
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.apply
-import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.newInstance
 
-class HygradleSettingsPlugin : Plugin<Settings> {
+abstract class HygradleSettingsPlugin : Plugin<Settings> {
+
+  @get:Inject abstract val objects: ObjectFactory
+
   override fun apply(settings: Settings) =
       with(settings) {
-        extensions.create<HygradleSettingsImpl>("hygradle")
+        extensions.add(
+            HygradleSettings::class.java,
+            "hygradle",
+            objects.newInstance<HygradleSettingsImpl>(),
+        )
+
         registerServices()
+
+        (dependencyResolutionManagement.repositories as ExtensionAware)
+            .extensions
+            .add(
+                Repository::class.java,
+                "hygradle",
+                objects.newInstance<RepositoryExtension>(
+                    dependencyResolutionManagement.repositories,
+                    hygradle().hytale.patchline,
+                ),
+            )
 
         settings.gradle.lifecycle.beforeProject {
           if (this.rootProject == this) this.pluginManager.apply(HygradleRootPlugin::class)
@@ -65,6 +90,7 @@ class HygradleSettingsPlugin : Plugin<Settings> {
         hytaleDecompile.set(settings.hygradle().hytale.decompile)
         hotswapAgentVersion.set(settings.hygradle().hotswapAgent.version)
         harnessVersion.set(settings.hygradle().harness.version)
+        vineflowerVersion.set(settings.hygradle().vineflower.version)
       }
     }
   }

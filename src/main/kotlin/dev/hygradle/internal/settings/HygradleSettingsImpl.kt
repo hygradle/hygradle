@@ -32,6 +32,11 @@ abstract class HygradleSettingsImpl : HygradleSettings {
       objects.newInstance<VersionedDependency>().apply { version.convention("0.0.1") }
 
   override fun harness(configure: Action<in VersionedDependency>) = configure.execute(harness)
+
+  override val vineflower: VersionedDependency =
+      objects.newInstance<VersionedDependency>().apply { version.convention("1.11.1") }
+
+  override fun vineflower(configure: Action<in VersionedDependency>) = configure.execute(vineflower)
 }
 
 internal fun Settings.hygradle() = settings.extensions.getByType(HygradleSettings::class.java)

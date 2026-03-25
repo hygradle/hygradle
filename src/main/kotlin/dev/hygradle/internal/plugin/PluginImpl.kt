@@ -1,4 +1,4 @@
-@file:Suppress("UnstableApiUsage")
+@file:Suppress("UnstableApiUsage", "Unused")
 
 package dev.hygradle.internal.plugin
 
@@ -9,7 +9,9 @@ import dev.hygradle.internal.attributes.Usage as HygradleUsage
 import java.util.Locale.getDefault
 import javax.inject.Inject
 import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConsumableConfiguration
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.Usage
@@ -40,6 +42,18 @@ abstract class PluginImpl(private val name: String) : Plugin {
       project.configurations.resolvable("_hygradle_${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnly)
+
+        attributes {
+          attribute(
+              Usage.USAGE_ATTRIBUTE,
+              project.objects.named(Usage::class.java, HygradleUsage.COMPILE),
+          )
+
+          attribute(
+              Category.CATEGORY_ATTRIBUTE,
+              project.objects.named(Category::class.java, HygradleCategory.HYGRADLE),
+          )
+        }
       }
 
   val compileElements =
@@ -109,6 +123,22 @@ abstract class PluginImpl(private val name: String) : Plugin {
         }
       }
 
+  init {
+    sourceSet(project.sourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME))
+
+    compileOnly.extendSourceSetConfiguration { compileOnlyConfigurationName }
+
+    compileClasspath.extendSourceSetConfiguration { compileClasspathConfigurationName }
+    compileClasspath.extendSourceSetConfiguration { implementationConfigurationName }
+
+    runtimeOnly.extendSourceSetConfiguration { runtimeOnlyConfigurationName }
+
+    runtimeClasspath.extendSourceSetConfiguration { runtimeClasspathConfigurationName }
+    runtimeClasspath.extendSourceSetConfiguration { implementationConfigurationName }
+
+    runtimeElements.extendSourceSetConfiguration { implementationConfigurationName }
+  }
+
   override val dependencies: PluginDependencies =
       project.objects.newInstance<PluginDependenciesImpl>(this)
 
@@ -120,25 +150,8 @@ abstract class PluginImpl(private val name: String) : Plugin {
 
   override fun sourceSet(sourceSet: SourceSet) = sourceSet(project.provider { sourceSet })
 
-  init {
-    sourceSet(project.sourceSets().named(SourceSet.MAIN_SOURCE_SET_NAME))
-
-    compileOnly.configure {
-      extendsFrom(
-          sourceSetName
-              .flatMap { project.sourceSets().named(it) }
-              .flatMap { project.configurations.named(it.compileOnlyConfigurationName) }
-      )
-    }
-
-    runtimeOnly.configure {
-      extendsFrom(
-          sourceSetName
-              .flatMap { project.sourceSets().named(it) }
-              .flatMap { project.configurations.named(it.runtimeOnlyConfigurationName) }
-      )
-    }
-  }
+  context(project: Project)
+  abstract fun configureConventions()
 
   private fun ConsumableConfiguration.addPluginClassDirectories() {
     val sourceSet = project.sourceSets().getByName(sourceSetName.get())
@@ -146,6 +159,16 @@ abstract class PluginImpl(private val name: String) : Plugin {
     for (dir in sourceSet.output.classesDirs.files) {
       outgoing.artifact(dir) { builtBy(sourceSet.output) }
     }
+  }
+
+  private fun NamedDomainObjectProvider<out Configuration>.extendSourceSetConfiguration(
+      f: SourceSet.() -> String
+  ) = configure {
+    extendsFrom(
+        sourceSetName
+            .flatMap { project.sourceSets().named(it) }
+            .flatMap { project.configurations.named(f.invoke(it)) }
+    )
   }
 }
 

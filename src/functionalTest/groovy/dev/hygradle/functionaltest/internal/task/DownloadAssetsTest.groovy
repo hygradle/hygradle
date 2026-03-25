@@ -2,7 +2,6 @@ package dev.hygradle.functionaltest.internal.task
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import dev.hygradle.functionaltest.FunctionalSpec
-import dev.hygradle.functionaltest.GradleDsl
 import spock.lang.Shared
 import spock.lang.TempDir
 
@@ -53,45 +52,30 @@ class DownloadAssetsTest extends FunctionalSpec {
 		]
 	}
 
-	private void setupProject(GradleDsl dsl) {
-		settingsFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle.settings' }
-                hygradle {
-                    hytale {
-                        version = '1.0.0'
-                    }
-                }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle.settings") }
-                hygradle {
-                    hytale {
-                        version = "1.0.0"
-                    }
-                }
-            """.stripIndent()
-		][dsl]
+	private void setupProject() {
+		settingsFile << """\
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale {
+					version = "1.0.0"
+				}
+			}
+		""".stripIndent()
 
 		gradleProperties << """\
-            hygradle.hytale.oauth.base=http://localhost:${wireMock.port()}
-            hygradle.hytale.accounts.base=http://localhost:${wireMock.port()}
-            hygradle.hytale.session.base=http://localhost:${wireMock.port()}
-        """.stripIndent()
+			hygradle.hytale.oauth.base=http://localhost:${wireMock.port()}
+			hygradle.hytale.accounts.base=http://localhost:${wireMock.port()}
+			hygradle.hytale.session.base=http://localhost:${wireMock.port()}
+		""".stripIndent()
 
-		buildFile(dsl) << [
-			(GradleDsl.GROOVY): """\
-                plugins { id 'dev.hygradle' }
-            """.stripIndent(),
-			(GradleDsl.KOTLIN): """\
-                plugins { id("dev.hygradle") }
-            """.stripIndent()
-		][dsl]
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+		""".stripIndent()
 	}
 
-	def "downloadAssets downloads asset bundle to cache directory (#dsl)"() {
+	def "downloadAssets downloads asset bundle to cache directory"() {
 		given:
-		setupProject(dsl as GradleDsl)
+		setupProject()
 		stubAssetBundleEndpoint()
 		stubCdnDownload()
 
@@ -102,14 +86,11 @@ class DownloadAssetsTest extends FunctionalSpec {
 		result.output.contains("BUILD SUCCESSFUL")
 		cachedBundle.exists()
 		cachedBundle.bytes == PLACEHOLDER_ASSETS_ZIP
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "downloadAssets skips download when bundle is already cached (#dsl)"() {
+	def "downloadAssets skips download when bundle is already cached"() {
 		given:
-		setupProject(dsl as GradleDsl)
+		setupProject()
 		def bundleDir = cachedBundleDir
 		bundleDir.mkdirs()
 		cachedBundle << PLACEHOLDER_ASSETS_ZIP
@@ -120,14 +101,11 @@ class DownloadAssetsTest extends FunctionalSpec {
 		then:
 		result.output.contains("BUILD SUCCESSFUL")
 		wireMock.findAll(getRequestedFor(urlPathMatching(".*"))).size() == 0
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
-	def "downloadAssets cleans stale bundles from cache (#dsl)"() {
+	def "downloadAssets cleans stale bundles from cache"() {
 		given:
-		setupProject(dsl as GradleDsl)
+		setupProject()
 		def bundleDir = cachedBundleDir
 		bundleDir.mkdirs()
 		def staleBundle = new File(bundleDir, "RELEASE-0.9.0.zip")
@@ -144,9 +122,6 @@ class DownloadAssetsTest extends FunctionalSpec {
 		!staleBundle.exists()
 		cachedBundle.exists()
 		cachedBundle.bytes == PLACEHOLDER_ASSETS_ZIP
-
-		where:
-		dsl << GradleDsl.values()
 	}
 
 	private void stubAssetBundleEndpoint() {

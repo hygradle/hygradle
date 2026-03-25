@@ -58,6 +58,7 @@ testing.suites {
         useSpock()
         dependencies {
           implementation(gradleTestKit())
+          implementation(libs.kotest.runner)
           implementation(libs.wiremock)
           implementation(libs.kotest.wiremock)
         }

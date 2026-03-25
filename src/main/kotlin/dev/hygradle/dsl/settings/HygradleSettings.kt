@@ -14,4 +14,8 @@ interface HygradleSettings {
   val harness: VersionedDependency
 
   fun harness(configure: Action<in VersionedDependency>)
+
+  val vineflower: VersionedDependency
+
+  fun vineflower(configure: Action<in VersionedDependency>)
 }

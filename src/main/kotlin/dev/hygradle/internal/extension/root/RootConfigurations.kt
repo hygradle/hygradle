@@ -1,6 +1,6 @@
-@file:Suppress("UnstableApiUsage", "Unused")
+@file:Suppress("UnstableApiUsage")
 
-package dev.hygradle.internal.extension
+package dev.hygradle.internal.extension.root
 
 import dev.hygradle.internal.attributes.Category as HygradleCategory
 import dev.hygradle.internal.attributes.Usage as HygradleUsage
@@ -8,9 +8,10 @@ import javax.inject.Inject
 import org.gradle.api.Project
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.Usage
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.named
 
-abstract class HygradleRootConfigurations {
+abstract class RootConfigurations : ExtensionAware {
 
   @get:Inject abstract val project: Project
 
@@ -39,5 +40,4 @@ abstract class HygradleRootConfigurations {
       }
 }
 
-internal fun Project.rootHygradleConfigurations() =
-    extensions.getByType(HygradleRootConfigurations::class.java)
+internal fun Project.rootConfigurations() = extensions.getByType(RootConfigurations::class.java)

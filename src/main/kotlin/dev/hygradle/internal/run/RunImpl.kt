@@ -6,8 +6,9 @@ import java.util.Locale.getDefault
 abstract class RunImpl(private val name: String) : Run {
   val taskGroup = "hygradle/runs/$name"
 
-  val taskSlug =
-      name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() }
+  val taskSlug = name.replaceFirstChar {
+    if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString()
+  }
 
   override fun getName(): String = name
 
