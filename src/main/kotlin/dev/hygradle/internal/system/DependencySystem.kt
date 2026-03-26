@@ -47,6 +47,7 @@ class DependencySystem : Plugin<Project> {
                 objects.newInstance<RepositoryExtension>(
                     project.repositories,
                     settingsService().hytalePatchline,
+                    gradle.gradleUserHomeDir,
                 ),
             )
       }

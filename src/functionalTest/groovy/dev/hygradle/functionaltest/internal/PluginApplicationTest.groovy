@@ -41,4 +41,30 @@ class PluginApplicationTest extends FunctionalSpec {
 		then:
 		result.output.contains("BUILD SUCCESSFUL")
 	}
+
+	def "repository accessor works in settings-level dependencyResolutionManagement"() {
+		given:
+		settingsFile << """\
+			import dev.hygradle.dsl.kotlin.accessors.hygradle
+
+			plugins { id("dev.hygradle.settings") }
+			hygradle {
+				hytale { version = "1.0.0" }
+			}
+			dependencyResolutionManagement {
+				repositories {
+					hygradle.repositories()
+				}
+			}
+		""".stripIndent()
+		buildFile << """\
+			plugins { id("dev.hygradle") }
+		""".stripIndent()
+
+		when:
+		def result = runner("help").build()
+
+		then:
+		result.output.contains("BUILD SUCCESSFUL")
+	}
 }

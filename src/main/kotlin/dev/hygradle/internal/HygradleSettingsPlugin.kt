@@ -39,6 +39,7 @@ abstract class HygradleSettingsPlugin : Plugin<Settings> {
                 objects.newInstance<RepositoryExtension>(
                     dependencyResolutionManagement.repositories,
                     hygradle().hytale.patchline,
+                    gradle.gradleUserHomeDir,
                 ),
             )
 

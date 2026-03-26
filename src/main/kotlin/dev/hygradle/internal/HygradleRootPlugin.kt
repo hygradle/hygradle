@@ -40,6 +40,7 @@ class HygradleRootPlugin : Plugin<Project> {
             objects.newInstance<RepositoryExtension>(
                 project.repositories,
                 settingsService().hytalePatchline,
+                gradle.gradleUserHomeDir,
             )
 
         repoExt.repositories()

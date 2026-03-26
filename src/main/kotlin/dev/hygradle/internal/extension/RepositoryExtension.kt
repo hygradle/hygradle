@@ -2,9 +2,9 @@ package dev.hygradle.internal.extension
 
 import dev.hygradle.dsl.extension.Repository
 import dev.hygradle.dsl.hytale.Patchline
+import java.io.File
 import java.net.URI
 import javax.inject.Inject
-import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.maven
@@ -14,9 +14,8 @@ abstract class RepositoryExtension
 constructor(
     private val handler: RepositoryHandler,
     private val hytalePatchline: Provider<Patchline>,
+    private val gradleUserHomeDir: File,
 ) : Repository {
-
-  @get:Inject abstract val project: Project
 
   override fun repositories(): Unit =
       with(handler) {
@@ -24,7 +23,7 @@ constructor(
         add(
             maven {
               name = "hytale-decompiled-cache"
-              url = project.gradle.gradleUserHomeDir.resolve("caches/hygradle/decompiled").toURI()
+              url = gradleUserHomeDir.resolve("caches/hygradle/decompiled").toURI()
             }
         )
 
