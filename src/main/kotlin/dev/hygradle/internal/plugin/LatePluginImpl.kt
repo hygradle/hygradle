@@ -5,7 +5,6 @@ import dev.hygradle.dsl.plugin.manifest.Manifest
 import dev.hygradle.internal.plugin.manifest.ManifestImpl
 import dev.hygradle.internal.task.plugin.AssembleAssets
 import dev.hygradle.internal.task.plugin.GenerateManifest
-import dev.hygradle.internal.task.plugin.rootDirectoryVisitor
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -31,18 +30,26 @@ abstract class LatePluginImpl(name: String) : PluginImpl(name), LatePlugin {
     manifest.includesAssetPack.convention(
         sourceSetName
             .flatMap { project.sourceSets().named(it) }
+
+            // TODO: Surely this can be simplified
             .map { sourceSet ->
               var found = false
 
-              sourceSet.resources.asFileTree.visit(
-                  rootDirectoryVisitor(AssembleAssets.ASSET_DIRECTORY_NAMES) {
-                    found = true
-                    stopVisiting()
-                  }
-              )
+              sourceSet.resources.asFileTree.visit {
+                if (
+                    relativePath.segments.size == 1 && isDirectory && name in ASSET_DIRECTORY_NAMES
+                ) {
+                  found = true
+                  stopVisiting()
+                }
+              }
 
               found
             }
     )
+  }
+
+  companion object {
+    private val ASSET_DIRECTORY_NAMES = listOf("Common", "Server")
   }
 }

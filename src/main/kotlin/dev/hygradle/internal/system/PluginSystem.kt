@@ -13,8 +13,10 @@ import dev.hygradle.internal.task.plugin.GenerateManifest
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.attributes.Category
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import org.gradle.language.jvm.tasks.ProcessResources
 
 class PluginSystem : Plugin<Project> {
   override fun apply(project: Project) =
@@ -128,6 +130,12 @@ class PluginSystem : Plugin<Project> {
       project.sourceSets().named(plugin.sourceSetName.get()).configure {
         resources.srcDir(plugin.generateManifest)
       }
+
+      project.tasks
+          .named<ProcessResources>(
+              project.sourceSets().getByName(plugin.sourceSetName.get()).processResourcesTaskName
+          )
+          .configure { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
     }
   }
 }
