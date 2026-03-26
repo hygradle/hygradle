@@ -3,8 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/plugin/as.remigelin.papalowda.iml" filepath="$PROJECT_DIR$/.idea/modules/plugin/as.remigelin.papalowda.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hygradle.main.iml" filepath="$PROJECT_DIR$/.idea/modules/hygradle.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/hygradle.test.iml" filepath="$PROJECT_DIR$/.idea/modules/hygradle.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/example/papalowda.example.iml" filepath="$PROJECT_DIR$/.idea/modules/example/papalowda.example.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/example/papalowda.example.main.iml" filepath="$PROJECT_DIR$/.idea/modules/example/papalowda.example.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/example/papalowda.example.test.iml" filepath="$PROJECT_DIR$/.idea/modules/example/papalowda.example.test.iml" />

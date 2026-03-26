@@ -3,7 +3,7 @@ package dev.hygradle.internal.plugin.manifest
 import dev.hygradle.dsl.plugin.manifest.Author
 import dev.hygradle.dsl.plugin.manifest.Dependency
 import dev.hygradle.dsl.plugin.manifest.Manifest
-import dev.hygradle.internal.subsystem.hygradleSettings
+import dev.hygradle.internal.service.settings.settingsService
 import javax.inject.Inject
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -17,11 +17,9 @@ abstract class ManifestImpl : Manifest {
   @get:Inject abstract val project: Project
 
   init {
-    group.convention(project.provider { project.group.toString().ifEmpty { null } })
-    version.convention(
-        project.provider { project.version.toString().takeIf { it != Project.DEFAULT_VERSION } }
-    )
-    serverVersion.convention(project.hygradleSettings().hytale.version)
+    group.convention(project.group.toString().ifEmpty { null })
+    version.convention(project.version.toString().takeIf { it != Project.DEFAULT_VERSION })
+    serverVersion.convention(project.settingsService().hytaleVersion)
     includesAssetPack.convention(false)
   }
 

@@ -9,8 +9,9 @@ import dev.hygradle.internal.run.RunImpl
 import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
 
-abstract class HygradleExtension : Hygradle {
+abstract class HygradleExtension : Hygradle, ExtensionAware {
   override fun plugins(action: Action<ExtensiblePolymorphicDomainObjectContainer<Plugin>>) =
       action.execute(this.plugins)
 
@@ -23,4 +24,4 @@ abstract class HygradleExtension : Hygradle {
   }
 }
 
-internal fun Project.hygradle() = extensions.getByType(HygradleExtension::class.java)
+internal fun Project.hygradle() = extensions.getByType(Hygradle::class.java) as HygradleExtension

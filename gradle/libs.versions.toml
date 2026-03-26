@@ -1,8 +1,9 @@
 [versions]
 kotlin = "2.3.0"
-ktfmt = "0.61"
+ktfmt = "0.62"
 ktor = "3.4.1"
 dokka = "2.1.0"
+kotest = "6.1.7"
 
 [libraries]
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.10.0" }
@@ -13,11 +14,12 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version = "6.0.2" }
 wiremock = { group = "org.wiremock", name = "wiremock", version = "3.13.0" }
+kotest-runner = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotest" }
+kotest-wiremock = { group = "io.kotest", name = "kotest-extensions-wiremock", version.ref = "kotest" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-spotless = { id = "com.diffplug.spotless", version = "8.3.0" }
+spotless = { id = "com.diffplug.spotless", version = "8.4.0" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 dokka-javadoc = { id = "org.jetbrains.dokka-javadoc", version.ref = "dokka" }

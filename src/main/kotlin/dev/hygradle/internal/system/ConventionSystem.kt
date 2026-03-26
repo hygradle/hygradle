@@ -1,4 +1,6 @@
-package dev.hygradle.internal.subsystem
+@file:Suppress("UnstableApiUsage")
+
+package dev.hygradle.internal.system
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -8,7 +10,7 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.kotlin.dsl.getByType
 
-class ConventionPlugin : Plugin<Project> {
+class ConventionSystem : Plugin<Project> {
   override fun apply(project: Project): Unit =
       with(project) {
         plugins.apply(JavaPlugin::class.java)

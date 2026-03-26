@@ -6,6 +6,7 @@ import dev.hygradle.dsl.settings.Version
 import dev.hygradle.dsl.settings.VersionedDependency
 import javax.inject.Inject
 import org.gradle.api.Action
+import org.gradle.api.initialization.Settings
 import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 
@@ -32,11 +33,10 @@ abstract class HygradleSettingsImpl : HygradleSettings {
 
   override fun harness(configure: Action<in VersionedDependency>) = configure.execute(harness)
 
-  internal fun lock() {
-    hytale.patchline.disallowChanges()
-    hytale.version.disallowChanges()
-    hytale.decompile.disallowChanges()
-    hotswapAgent.version.disallowChanges()
-    harness.version.disallowChanges()
-  }
+  override val vineflower: VersionedDependency =
+      objects.newInstance<VersionedDependency>().apply { version.convention("1.11.1") }
+
+  override fun vineflower(configure: Action<in VersionedDependency>) = configure.execute(vineflower)
 }
+
+internal fun Settings.hygradle() = settings.extensions.getByType(HygradleSettings::class.java)

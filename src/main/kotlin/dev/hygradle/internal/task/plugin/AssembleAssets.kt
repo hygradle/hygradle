@@ -8,8 +8,6 @@ import kotlin.io.path.deleteRecursively
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileVisitDetails
-import org.gradle.api.file.FileVisitor
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -58,11 +56,12 @@ abstract class AssembleAssets : DefaultTask() {
     assetDir.mkdirs()
 
     symlink(pluginManifest.get().asFile)
-    symlink(ASSET_DIRECTORY_NAMES)
-  }
 
-  private fun symlink(fileNames: List<String>) {
-    pluginResources.asFileTree.visit(rootDirectoryVisitor(fileNames) { symlink(file) })
+    pluginResources.asFileTree.visit {
+      if (relativePath.segments.size == 1 && name != "manifest.json") {
+        symlink(file)
+      }
+    }
   }
 
   @OptIn(ExperimentalPathApi::class)
@@ -74,22 +73,4 @@ abstract class AssembleAssets : DefaultTask() {
           .toPath()
           .also { it.deleteRecursively() }
           .createSymbolicLinkPointingTo(file.toPath())
-
-  companion object {
-    val ASSET_DIRECTORY_NAMES = listOf("Common", "Server")
-  }
 }
-
-internal fun rootDirectoryVisitor(
-    names: Collection<String>,
-    action: FileVisitDetails.() -> Unit,
-): FileVisitor =
-    object : FileVisitor {
-      override fun visitDir(dirDetails: FileVisitDetails) {
-        if (dirDetails.relativePath.segments.size == 1 && dirDetails.name in names) {
-          action.invoke(dirDetails)
-        }
-      }
-
-      override fun visitFile(fileDetails: FileVisitDetails) {}
-    }
