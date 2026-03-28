@@ -63,14 +63,14 @@ class HygradleRootPlugin : Plugin<Project> {
     val extractAssets =
         project.tasks.register<ExtractAssets>("extractAssets") {
           group = "hygradle/internal"
-          assetBundle.from(downloadAssets.map { it.assetBundleCacheDirectory.asFileTree })
+          version.set(hygradleSettings.hytaleVersion)
+          patchline.set(hygradleSettings.hytalePatchline)
+          assetBundle.from(downloadAssets.map { it.bundleFile })
           assetCacheDirectory.fileValue(cacheDir.resolve("assets"))
         }
 
     rootConfigs.hytaleAssetsRuntimeElements.configure {
-      outgoing.artifacts(extractAssets.map { it.assetCacheDirectory.asFileTree }) {
-        builtBy(extractAssets)
-      }
+      outgoing.artifact(extractAssets.flatMap { it.assetsFile })
     }
 
     // TODO: Remove this shit once the source is shared

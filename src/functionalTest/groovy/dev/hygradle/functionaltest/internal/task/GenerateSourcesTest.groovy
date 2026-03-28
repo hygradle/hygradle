@@ -220,25 +220,31 @@ class GenerateSourcesTest extends FunctionalSpec {
 		sourceFile.text = """\
 			package org.jetbrains.java.decompiler.main.decompiler;
 			import java.io.*;
-			import java.nio.file.*;
+			import java.util.jar.*;
 			public class ConsoleDecompiler {
 				public static void main(String[] args) throws Exception {
-					Path input = Paths.get(args[0]);
-					Path outputDir = Paths.get(args[1]);
-					Files.createDirectories(outputDir);
-					if (Files.isDirectory(input)) {
-						Files.walk(input).filter(Files::isRegularFile).forEach(source -> {
-							try {
-								Path target = outputDir.resolve(input.relativize(source));
-								Files.createDirectories(target.getParent());
-								Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-							} catch (IOException e) {
-								throw new UncheckedIOException(e);
-							}
-						});
-					} else {
-						Files.copy(input, outputDir.resolve(input.getFileName()),
-								StandardCopyOption.REPLACE_EXISTING);
+					String onlyPrefix = null;
+					int i = 0;
+					for (; i < args.length; i++) {
+						if (args[i].startsWith("-only=")) {
+							onlyPrefix = args[i].substring("-only=".length());
+						} else {
+							break;
+						}
+					}
+					File inputJar = new File(args[i]);
+					File outputJar = new File(args[i + 1]);
+					try (JarInputStream jis = new JarInputStream(new FileInputStream(inputJar));
+						 JarOutputStream jos = new JarOutputStream(new FileOutputStream(outputJar))) {
+						JarEntry entry;
+						while ((entry = jis.getNextJarEntry()) != null) {
+							if (onlyPrefix != null && !entry.getName().startsWith(onlyPrefix)) continue;
+							jos.putNextEntry(new JarEntry(entry.getName()));
+							byte[] buf = new byte[1024];
+							int len;
+							while ((len = jis.read(buf)) > 0) jos.write(buf, 0, len);
+							jos.closeEntry();
+						}
 					}
 				}
 			}

@@ -67,7 +67,7 @@ class ExtractAssetsTest extends FunctionalSpec {
 	def "extractAssets skips extraction when assets are already cached"() {
 		given:
 		setupProject()
-		def preExisting = "already-cached".bytes
+		def preExisting = createBundleZip("already-cached".bytes)
 		cachedAssetDir.mkdirs()
 		cachedAsset.bytes = preExisting
 
