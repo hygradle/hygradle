@@ -9,13 +9,17 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
+import java.io.File
+import java.util.zip.ZipFile
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.services.ServiceReference
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.UntrackedTask
@@ -30,6 +34,18 @@ abstract class DownloadAssets : DefaultTask() {
 
   @get:OutputDirectory abstract val assetBundleCacheDirectory: DirectoryProperty
 
+  @get:Internal abstract val bundleFile: RegularFileProperty
+
+  init {
+    bundleFile.convention(
+        assetBundleCacheDirectory.zip(
+            patchline.zip(version) { patchline, version -> "$patchline-$version.zip" }
+        ) { dir, filename ->
+          dir.file(filename)
+        }
+    )
+  }
+
   @TaskAction
   fun downloadAssets() {
     val patchline = patchline.get()
@@ -40,8 +56,7 @@ abstract class DownloadAssets : DefaultTask() {
     // TODO: Better way to detect stale bundles? Last modified maybe??
     cacheDir.asFileTree.visit { if (file != assetBundle) file.delete() }
 
-    // TODO: Figure out how to better avoid downloading with finer-grained caching? idk
-    if (assetBundle.exists()) return
+    if (assetBundle.exists() && assetBundle.isValidZip()) return
 
     val bundleUrl = hytale.get().service.getAssetBundle(patchline, version)
 
@@ -55,3 +70,12 @@ abstract class DownloadAssets : DefaultTask() {
     }
   }
 }
+
+// TODO: extract this into a proper shared utility
+internal fun File.isValidZip(): Boolean =
+    try {
+      ZipFile(this).close()
+      true
+    } catch (_: Exception) {
+      false
+    }

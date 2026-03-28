@@ -6,6 +6,8 @@ import spock.lang.Shared
 import spock.lang.TempDir
 
 import java.nio.file.Path
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
@@ -18,13 +20,7 @@ class DownloadAssetsTest extends FunctionalSpec {
 	@TempDir
 	Path gradleHome
 
-	static final byte[] PLACEHOLDER_ASSETS_ZIP = [
-		(byte) 0x50,
-		(byte) 0x4B,
-		(byte) 0x03,
-		(byte) 0x04,
-		(byte) 0x00
-	] as byte[]
+	static final byte[] PLACEHOLDER_ASSETS_ZIP = createEmptyZip()
 
 	def setupSpec() {
 		wireMock = new WireMockServer(wireMockConfig().dynamicPort())
@@ -150,5 +146,14 @@ class DownloadAssetsTest extends FunctionalSpec {
 
 	private File getCachedBundle() {
 		new File(cachedBundleDir, "RELEASE-1.0.0.zip")
+	}
+
+	private static byte[] createEmptyZip() {
+		def bytes = new ByteArrayOutputStream()
+		def zip = new ZipOutputStream(bytes)
+		zip.putNextEntry(new ZipEntry("placeholder"))
+		zip.closeEntry()
+		zip.close()
+		bytes.toByteArray()
 	}
 }

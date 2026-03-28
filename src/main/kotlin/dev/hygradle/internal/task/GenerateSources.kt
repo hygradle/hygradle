@@ -1,14 +1,10 @@
 package dev.hygradle.internal.task
 
 import java.io.File
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
@@ -20,10 +16,6 @@ import org.gradle.process.ExecOperations
 @UntrackedTask(because = "Decompilation is expensive, even a subset of the Hytale classes.")
 abstract class GenerateSources : DefaultTask() {
   @get:Inject abstract val exec: ExecOperations
-
-  @get:Inject abstract val fs: FileSystemOperations
-
-  @get:Inject abstract val archives: ArchiveOperations
 
   @get:Classpath abstract val serverJar: ConfigurableFileCollection
 
@@ -52,11 +44,6 @@ abstract class GenerateSources : DefaultTask() {
     workDir.deleteRecursively()
     workDir.mkdirs()
 
-    val classesDir = File(workDir, "classes")
-    val decompileDir = File(workDir, "decompiled")
-    classesDir.mkdirs()
-    decompileDir.mkdirs()
-
     // Resolve the server JAR BEFORE cleaning gavDir.  When the decompiled-cache
     // Maven repo wins resolution, this file lives inside gavDir — relocate it
     // to the work directory so the upcoming deleteRecursively() doesn't destroy
@@ -72,32 +59,12 @@ abstract class GenerateSources : DefaultTask() {
     gavDir.deleteRecursively()
     gavDir.mkdirs()
 
-    // Extract only com/hypixel/hytale/** classes from the server JAR
-    fs.copy {
-      from(archives.zipTree(serverJar))
-      into(classesDir)
-      include("com/hypixel/hytale/**")
-    }
-
-    // Decompile the filtered directory tree
-    // TODO: Move this to a worker to prevent classpath leaks? hmm
+    // Decompile only com/hypixel/hytale classes, outputting directly to a sources JAR
     exec.javaexec {
       classpath(vineflower)
       mainClass.set("org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler")
-      args(classesDir.absolutePath, decompileDir.absolutePath)
+      args("-only=com/hypixel/hytale", serverJar.absolutePath, sourcesJar.absolutePath)
       isIgnoreExitValue = true
-    }
-
-    // Package decompiled sources into -sources.jar
-    ZipOutputStream(sourcesJar.outputStream().buffered()).use { stream ->
-      decompileDir
-          .walkTopDown()
-          .filter { it.isFile }
-          .forEach { file ->
-            stream.putNextEntry(ZipEntry(file.relativeTo(decompileDir).invariantSeparatorsPath))
-            file.inputStream().buffered().use { it.copyTo(stream) }
-            stream.closeEntry()
-          }
     }
 
     serverJar.copyTo(targetJar, overwrite = true)
