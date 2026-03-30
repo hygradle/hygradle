@@ -1,11 +1,13 @@
 package dev.hygradle.internal.task.plugin
 
 import java.io.File
+import java.nio.file.FileSystemException
 import javax.inject.Inject
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createSymbolicLinkPointingTo
 import kotlin.io.path.deleteRecursively
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
@@ -66,11 +68,22 @@ abstract class AssembleAssets : DefaultTask() {
 
   @OptIn(ExperimentalPathApi::class)
   private fun symlink(file: File) =
-      assetDirectory
-          .get()
-          .asFile
-          .resolve(file.name)
-          .toPath()
-          .also { it.deleteRecursively() }
-          .createSymbolicLinkPointingTo(file.toPath())
+      try {
+        assetDirectory
+            .get()
+            .asFile
+            .resolve(file.name)
+            .toPath()
+            .also { it.deleteRecursively() }
+            .createSymbolicLinkPointingTo(file.toPath())
+      } catch (_: FileSystemException) {
+        throw GradleException(
+            """
+          Could not assemble asset directory for plugin `${pluginName.get()}`.
+          If you are running on Windows, Hygradle requires Development Mode to be enabled to symlink assets.
+          More information on how to enable Developer Mode can be found here: https://learn.microsoft.com/en-us/windows/advanced-settings/developer-mode
+        """
+                .trimIndent()
+        )
+      }
 }
