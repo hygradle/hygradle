@@ -112,7 +112,7 @@ class CrossProjectResolutionTest extends FunctionalSpec {
 		def pluginBDir = projectDir.resolve("pluginB").toFile()
 		new File(pluginBDir, "build.gradle.kts") << """
 			tasks.register("printRuntimeClasspath") {
-				inputs.files(configurations.named("_hygradle_pluginBRuntimeClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_pluginBRuntimeClasspath"))
 				doLast {
 					inputs.files.forEach { println("RESOLVED: ${'$'}it") }
 				}
@@ -202,13 +202,13 @@ class CrossProjectResolutionTest extends FunctionalSpec {
 		def pluginBDir = projectDir.resolve("pluginB").toFile()
 		new File(pluginBDir, "build.gradle.kts") << """
 			tasks.register("printCompileClasspath") {
-				inputs.files(configurations.named("_hygradle_pluginBCompileClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_pluginBCompileClasspath"))
 				doLast {
 					inputs.files.forEach { println("COMPILE: ${'$'}it") }
 				}
 			}
 			tasks.register("printRuntimeClasspath") {
-				inputs.files(configurations.named("_hygradle_pluginBRuntimeClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_pluginBRuntimeClasspath"))
 				doLast {
 					inputs.files.forEach { println("RUNTIME: ${'$'}it") }
 				}
@@ -256,13 +256,13 @@ class CrossProjectResolutionTest extends FunctionalSpec {
 		def pluginBDir = projectDir.resolve("pluginB").toFile()
 		new File(pluginBDir, "build.gradle.kts") << """
 			tasks.register("printCompileClasspath") {
-				inputs.files(configurations.named("_hygradle_pluginBCompileClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_pluginBCompileClasspath"))
 				doLast {
 					inputs.files.forEach { println("COMPILE: ${'$'}it") }
 				}
 			}
 			tasks.register("printRuntimeClasspath") {
-				inputs.files(configurations.named("_hygradle_pluginBRuntimeClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_pluginBRuntimeClasspath"))
 				doLast {
 					inputs.files.forEach { println("RUNTIME: ${'$'}it") }
 				}
@@ -373,7 +373,7 @@ class CrossProjectResolutionTest extends FunctionalSpec {
 				}
 			}
 			tasks.register("printPluginRuntimeClasspath") {
-				inputs.files(configurations.named("_hygradle_myPluginRuntimeClasspath"))
+				inputs.files(configurations.named("_hygradle_plugin_myPluginRuntimeClasspath"))
 				doLast {
 					inputs.files.forEach { println("PLUGIN_RUNTIME: ${'$'}it") }
 				}

@@ -34,12 +34,12 @@ abstract class PluginImpl(private val name: String) : Plugin {
   }
 
   val compileOnly =
-      project.configurations.dependencyScope("_hygradle_${name}CompileOnly") {
+      project.configurations.dependencyScope("_hygradle_plugin_${name}CompileOnly") {
         description = "Compile-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
   val compileClasspath =
-      project.configurations.resolvable("_hygradle_${name}CompileClasspath") {
+      project.configurations.resolvable("_hygradle_plugin_${name}CompileClasspath") {
         description = "Compile classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(compileOnly)
 
@@ -57,7 +57,7 @@ abstract class PluginImpl(private val name: String) : Plugin {
       }
 
   val compileElements =
-      project.configurations.consumable("_hygradle_${name}CompileElements") {
+      project.configurations.consumable("_hygradle_plugin_${name}CompileElements") {
         extendsFrom(compileOnly)
 
         // Consumers don't request a version, so the version here doesn't matter
@@ -79,12 +79,12 @@ abstract class PluginImpl(private val name: String) : Plugin {
       }
 
   val runtimeOnly =
-      project.configurations.dependencyScope("_hygradle_${name}RuntimeOnly") {
+      project.configurations.dependencyScope("_hygradle_plugin_${name}RuntimeOnly") {
         description = "Runtime-only dependencies for plugin '${this@PluginImpl.name}'."
       }
 
   val runtimeClasspath =
-      project.configurations.resolvable("_hygradle_${name}RuntimeClasspath") {
+      project.configurations.resolvable("_hygradle_plugin_${name}RuntimeClasspath") {
         description = "Runtime classpath for plugin '${this@PluginImpl.name}'."
         extendsFrom(runtimeOnly)
 
@@ -102,7 +102,7 @@ abstract class PluginImpl(private val name: String) : Plugin {
       }
 
   val runtimeElements =
-      project.configurations.consumable("_hygradle_${name}RuntimeElements") {
+      project.configurations.consumable("_hygradle_plugin_${name}RuntimeElements") {
         extendsFrom(runtimeOnly)
 
         // Consumers don't request a version, so the version here doesn't matter

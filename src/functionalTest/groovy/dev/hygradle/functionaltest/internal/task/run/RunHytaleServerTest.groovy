@@ -85,7 +85,9 @@ class RunHytaleServerTest extends FunctionalSpec {
 				maven { url = uri("localRepo") }
 			}
 			hygradle {
-				${unknownPlugin ? 'runs.register("test") { includePlugins("nonExistent") }' : 'runs.register("test")'}
+				${unknownPlugin
+				? 'runs.register("test") { dependencies { runtimePlugin(project(), "nonExistent") } }'
+				: 'runs.register("test")'}
 			}
 		""".stripIndent()
 	}
@@ -125,7 +127,7 @@ class RunHytaleServerTest extends FunctionalSpec {
 		def result = runner("startTestServer").buildAndFail()
 
 		then:
-		result.output.contains("Plugin with name 'nonExistent' not found")
+		result.output.contains("Unable to find a variant of 'root project :' with the requested capability: coordinates 'dev.hygradle.plugin:nonExistent'")
 	}
 
 	def "extractedAssetsClasspath resolves to asset zip file in single project"() {
